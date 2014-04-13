@@ -11,7 +11,9 @@ screen.fill(background_colour)
 
 pygame.display.flip()
 
-while True:
+state = True
+
+while state:
   for event in pygame.event.get():
     if event.type == pygame.QUIT:
-    	False
+    	state = False
