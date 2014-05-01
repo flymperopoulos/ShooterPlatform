@@ -14,36 +14,40 @@ from os.path import isfile, join
 import random
 import numpy as np
 import cv2
-        
+
+
+
 class Camera:
-    
-    def __init__(self):
+    def __init__(self, screen):
         self.cam = cv2.VideoCapture(0)
         self.x=0
         self.y=0
+        self.screen = screen
         
     def update(self):
         # Capture frame-by-frame
         ret, frame = self.cam.read()
-
+        
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
+        
         # define range of blue color in HSV
         lower_blue = np.uint8([110, 100, 100])
         upper_blue = np.uint8([130,255,255])
         # Threshold the HSV image to get only blue colors
         blue = cv2.inRange(hsv, lower_blue, upper_blue)
-        
         moment = cv2.moments(blue)
-
+        
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
-            self.x=int(self.cam.get(3))-x
-            self.y=y
-        
+            camWidth = self.cam.get(3)
+            camHeight = self.cam.get(4)
+            self.x = int((1.0*self.cam.get(3)-x)/camWidth*self.screen.get_size()[0])
+            self.y = int((1.0*y)/camHeight*self.screen.get_size()[1])
+    
     def endCam(self):
         self.cam.release()
         cv2.destroyAllWindows()
+
         
 class HUD:
     
@@ -62,8 +66,11 @@ class HUD:
         font = pygame.font.Font(None, 36)
         text1 = font.render("Score: " + str(self.score), 1, (10, 10, 10))
         text2 = font.render("Health: " + str(self.health), 1, (10, 10, 10))
+        text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
         self.screen.blit(text1,(50,50))
         self.screen.blit(text2,(725,50))
+#        if self.gun.isEmpty():        
+#            self.screen.blit(text,(100,100))
         
     def endGame(self):
         font = pygame.font.Font(None, 36)
@@ -86,13 +93,23 @@ class Background:
         
 class Gun:
     
-    def __init__(self,screen,cam):
+    def __init__(self,screen,cam, ammo):
         self.x = 0
         self.y = 0
         self.cam = cam
         self.screen = screen
         self.crosshair = pygame.image.load('target.png')
         self.gunSize = self.crosshair.get_size()
+        self.ammo = ammo
+        self.rAmmo = ammo
+        
+    def reloaded(self):
+        self.ammo = self.rAmmo
+    
+    def isEmpty(self):
+        if self.ammo == 0:
+            return True
+        return False
         
     def update(self):
         #self.x = pygame.mouse.get_pos()[0]
@@ -100,6 +117,10 @@ class Gun:
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))
+        font = pygame.font.Font(None, 36)
+        if self.isEmpty():
+            text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
+            self.screen.blit(text3,(100,100))
         
         
         
@@ -146,6 +167,7 @@ class Enemy:
         self.pos=pos
         self.images = images
         self.scaler = scaler
+#        self.health = health
         self.initWidth = 25
         self.oldDirection = 'still'
         self.direction = 'forward'
@@ -200,8 +222,8 @@ class Main:
         self.enemies=[]
         self.newEnemyProb = .01
         
-        self.cam = Camera()
-        self.gun = Gun(self.screen,self.cam)
+        self.cam = Camera(self.screen)
+        self.gun = Gun(self.screen,self.cam, 7)
         
         self.hud = HUD(self.screen)
         
@@ -238,11 +260,19 @@ class Main:
                     
                 if event.key == K_SPACE:
                     pos = (self.cam.x,self.cam.y)
-                    for enemy in self.enemies[::-1]:
-                        if enemy.isHit(pos):
-                            self.enemies.remove(enemy)
-                            self.hud.scoreUp()
-                            break
+                    if self.gun.isEmpty():
+                    
+                        break
+                    else:
+                        self.gun.ammo -= 1
+                    
+                        for enemy in self.enemies[::-1]:
+                            if enemy.isHit(pos):
+                                self.enemies.remove(enemy)
+                                self.hud.scoreUp()
+                                break
+                if event.key == K_r:
+                    self.gun.reloaded()
                     
             if event.type == pygame.MOUSEBUTTONUP:
                 pos = pygame.mouse.get_pos()

@@ -9,7 +9,7 @@ print cam.get(4)
 
 green = np.uint8([[[0,0,255]]]) 
 hsv_green = cv2.cvtColor(green,cv2.COLOR_BGR2HSV)
-print hsv_green 
+print hsv_green
 
 while(True):
     # Capture frame-by-frame
@@ -23,21 +23,28 @@ while(True):
 #   hsv_frame = cv2.createImage(cv2.GetSize(frame), 8, 3)
 
     # define range of blue color in HSV
-    lower_blue = np.uint8([110, 100, 100])
+    lower_blue = np.uint8([110, 50, 50])
     upper_blue = np.uint8([130,255,255])
 
     # define range of green color in HSV
-    lower_green = np.uint8([0, 255, 127])
-    upper_green = np.uint8([34, 139, 34])
+    lower_green = np.uint8([0, 100, 0])
+    upper_green = np.uint8([0, 255, 0])
+    
+    lower_red= np.uint8([0, 0, 130])
+    upper_red = np.uint8([140, 110, 255])
 
     # Threshold the HSV image to get only blue colors
     blue = cv2.inRange(hsv, lower_blue, upper_blue)
     
     green = cv2.inRange(hsv, lower_green, upper_green)
+    
+    red = cv2.inRange(hsv, lower_red, upper_red)
 
     moment = cv2.moments(blue)
     
     moment1 = cv2.moments(green)
+    
+    moment2 = cv2.moments(green)
 
     if moment['m00'] != 0:
         x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -47,9 +54,13 @@ while(True):
         x,y = int(moment1['m10']/moment1['m00']), int(moment1['m01']/moment1['m00'])
         cv2.circle (green,(int(cam.get(3))-x,y),50,255,-1)
     
+    if moment2['m00'] != 0:
+        x,y = int(moment2['m10']/moment2['m00']), int(moment2['m01']/moment2['m00'])
+        cv2.circle (red,(int(cam.get(3))-x,y),50,255,-1)
+    
     cv2.imshow('video',frame)
     cv2.imshow('only blue',blue)
-    cv2.imshow('some green', green)
+    cv2.imshow('some red', red)
     
 #    cv2.imshow('only green',green)
 
