@@ -124,9 +124,7 @@ class Gun:
         if self.isEmpty():
             text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
             self.screen.blit(text3,(100,100))
-        
-        
-        
+                 
 class Scaler:
     
     def __init__(self, yRange, xRange1, xRange2):
@@ -134,13 +132,12 @@ class Scaler:
         self.yRange = yRange
         self.xRange1 = xRange1
         self.xRange2 = xRange2
-        self.scaleFactor = (1.0*((xRange2[1]-xRange2[0])-(xRange1[1]-xRange1[0])))/(yRange[1]-yRange[0])
         
     def scale(self,yVal,initWidth):
-        relDist = 1.0*(yVal-self.yRange[0])/(self.yRange[1]-self.yRange[0])
-        widthDist = 1.0*initWidth/(self.xRange1[1]-self.xRange1[0])
-        newRoadWidth = 1.0*((self.xRange2[1]-self.xRange2[0])-(self.xRange1[1]-self.xRange1[0]))*relDist+(self.xRange1[1]-self.xRange1[0])        
-        return newRoadWidth*widthDist/initWidth
+        wScaled=(self.xRange2[1]-self.xRange2[0])*initWidth/(self.xRange1[1]-self.xRange1[0])
+        relY = yVal*1.0/(self.yRange[1]-self.yRange[0])
+        newWidth = (wScaled-initWidth)*relY+initWidth
+        return newWidth/initWidth
         
     def findX(self,yVal,relX):
         relDist = 1.0*(yVal-self.yRange[0])/(self.yRange[1]-self.yRange[0])
@@ -209,11 +206,13 @@ class Enemy:
         self.images = images
         self.scaler = scaler
 #        self.health = health
-        self.initWidth = 25
+        self.initWidth = 25.0
+        self.initSpeed = 2.0
         self.oldDirection = 'still'
         self.direction = 'forward'
         self.walkCounter = 0
-        self.wait = 10
+        self.wait = 10 
+        self.speed = 1
         
     def update(self):
         self.move()
@@ -223,7 +222,8 @@ class Enemy:
         self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0]),self.pos[1]))
         
     def move(self):
-        self.pos = (self.pos[0],self.pos[1]+2)
+        speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
+        self.pos = (self.pos[0],self.pos[1]+speed)
         
     def isHit(self,pos):
         minPoint = (self.scaler.findX(self.pos[1],self.pos[0]),self.pos[1])
@@ -232,9 +232,8 @@ class Enemy:
             if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.images['front2'].get_size()[1]*scaleFactor):
                 return True
         return False
+
         
-
-
 class Main:
     
     def __init__(self):
