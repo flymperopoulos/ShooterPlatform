@@ -2,7 +2,10 @@
 """
 Created on Wed Apr 16 21:29:13 2014
 
-@author: sidd
+@author: 
+Sidd Singal
+James Jang
+Filippos Lymperopoulos
 """
 
 import pygame
@@ -155,8 +158,7 @@ class Wall:
         self.height = 10
         
     def update(self,image):
-        
-        pass
+        self.image = pygame.image.load('brick.png')    
         
 
 class Enemy:
