@@ -148,18 +148,16 @@ class Scaler:
     
 class Wall:
     
-    def __init__(self, screen, pos, width):
+    def __init__(self, screen, pos, height):
         
         self.screen = screen
         self.pos = pos
-        self.height = 10
+        self.height = height
+        self.width = 2*self.height
         
-    def update(self,image):
-        self.image = pygame.image.load('wall.png')  
-        scalingFactor = self.scaler.scale(self.pos[1],self.height)
-        toShow = pygame.transform.scale(image,(int(height*image.get_size()[0]),int(height*image.get_size()[1])))
-        self.screen.blit(toShow,(self.scaler.findX(self.pos[1],self.pos[0]),self.pos[1]))
-
+    def update(self):
+        pygame.draw.rect(self.screen,(250,0,0),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.pos[0]+self.width/2.0),int(self.pos[1])))))
+  
 class EnemyManager:
     def __init__(self,screen,scaler,hud):
         self.screen = screen
@@ -169,6 +167,7 @@ class EnemyManager:
         self.newEnemyProb = .01
         self.enemyImages = {}
         self.scaler = scaler
+        self.walls.append(Wall(self.screen,(100,100),20))
 
         enemyFiles = [ f for f in listdir('SoldierSprite/') if isfile(join('SoldierSprite/',f)) ]
         for f in enemyFiles:
@@ -187,6 +186,7 @@ class EnemyManager:
                 self.enemies.remove(enemy)
                 self.hud.hurt()
 
+
     def checkHit(self,pos):
         for enemy in self.enemies[::-1]:
             if enemy.isHit(pos):
@@ -194,8 +194,14 @@ class EnemyManager:
                 self.hud.scoreUp()
                 break
 
+    def createWalls(self):
+        pass
+
     def update(self):
         self.updateEnemies()
+
+        for wall in self.walls:
+            wall.update()
 
 class Enemy:
     
