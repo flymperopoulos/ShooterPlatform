@@ -294,11 +294,11 @@ class Main:
                     else:
                         self.gun.ammo -= 1
                         self.enMan.checkHit(pos)
-                        self.track = pygame.mixer.music.load('shoot.wav') 
+                        self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
-                elif event.key == K_r:
+                if event.key == K_r:
                     self.gun.reloaded()
-                    self.track = pygame.mixer.music.load('dd.wav')        
+                    self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
                     
             # if event.type == pygame.MOUSEBUTTONUP:
