@@ -108,7 +108,7 @@ class Gun:
         
     def reloaded(self):
         self.ammo = self.rAmmo
-    
+
     def isEmpty(self):
         if self.ammo == 0:
             return True
@@ -211,7 +211,7 @@ class Enemy:
         self.pos=pos
         self.images = images
         self.scaler = scaler
-#        self.health = health
+#       self.health = health
         self.initWidth = 25.0
         self.initSpeed = 2.0
         self.oldDirection = 'still'
@@ -219,6 +219,8 @@ class Enemy:
         self.walkCounter = 0
         self.wait = 10 
         self.speed = 1
+
+        # self.soundPlayed = False
         
     def update(self):
         self.move()
@@ -238,8 +240,7 @@ class Enemy:
             if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.images['front2'].get_size()[1]*scaleFactor):
                 return True
         return False
-
-        
+            
 class Main:
     
     def __init__(self):
@@ -285,15 +286,20 @@ class Main:
                     exit()
                     
                 if event.key == K_SPACE:
+                    # self.soundPlayed = True       
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
-                    
+                        # self.soundPlayed = False
                         break
                     else:
                         self.gun.ammo -= 1
                         self.enMan.checkHit(pos)
-                if event.key == K_r:
+                        self.track = pygame.mixer.music.load('shoot.wav') 
+                        pygame.mixer.music.play()
+                elif event.key == K_r:
                     self.gun.reloaded()
+                    self.track = pygame.mixer.music.load('dd.wav')        
+                    pygame.mixer.music.play()
                     
             # if event.type == pygame.MOUSEBUTTONUP:
             #     pos = pygame.mouse.get_pos()
@@ -302,7 +308,7 @@ class Main:
             #             self.enemies.remove(enemy)
             #             self.hud.scoreUp()
             #             break
-                    
+
         if self.hud.health>0:
             self.background.update()
             self.cam.update()
