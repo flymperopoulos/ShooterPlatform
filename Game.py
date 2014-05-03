@@ -221,7 +221,7 @@ class Enemy:
         self.speed = 1
 
         # self.soundPlayed = False
-        
+    
     def update(self):
         self.move()
         image = self.images['front2']
