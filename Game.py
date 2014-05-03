@@ -98,7 +98,7 @@ class Gun:
     
     def __init__(self,screen,cam, ammo):
         self.x = 0
-        self.y = 0
+        self.y = 0 
         self.cam = cam
         self.screen = screen
         self.crosshair = pygame.image.load('target.png')
@@ -186,7 +186,6 @@ class EnemyManager:
                 self.enemies.remove(enemy)
                 self.hud.hurt()
 
-
     def checkHit(self,pos):
         for enemy in self.enemies[::-1]:
             if enemy.isHit(pos):
@@ -254,6 +253,7 @@ class Main:
         self.screen = pygame.display.set_mode((width,height))
         pygame.display.set_caption('Shooter Platform')
         self.clock=pygame.time.Clock()
+        self.shooting = False
         
         self.background = Background(self.screen)
         
@@ -289,10 +289,10 @@ class Main:
                     # self.soundPlayed = True       
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
-                        # self.soundPlayed = False
                         break
                     else:
                         self.gun.ammo -= 1
+                        self.shooting = True
                         self.enMan.checkHit(pos)
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
@@ -321,6 +321,12 @@ class Main:
             self.hud.update()
         
             self.gun.update()
+            if self.shooting:
+                s = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  # the size of your rect
+                s.set_alpha(128)                # alpha level
+                s.fill((255,255,255))           # this fills the entire surface
+                self.screen.blit(s, (0,0)) 
+                self.shooting = False
         else:
             self.hud.endGame()
         
