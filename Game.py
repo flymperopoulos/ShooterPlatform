@@ -10,6 +10,7 @@ Filippos Lymperopoulos
 
 import pygame
 from pygame.locals import *
+import pygame as pyg
 import math
 import numpy as np
 from os import listdir
@@ -56,24 +57,31 @@ class HUD:
     
     def __init__(self,screen):
         self.score = 0
-        self.health = 100
+        self.maxHealth = 10
+        self.health = self.maxHealth
         self.screen = screen
-        
+
     def scoreUp(self):
         self.score+=1
         
     def hurt(self):
         self.health-=1
+        hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
+        hurtEnem.set_alpha(100)                
+        hurtEnem.fill((239,66,66))           
+        self.screen.blit(hurtEnem, (0,0)) 
         
     def update(self):
+        pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/25), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/70)))
+        pygame.draw.rect(self.screen, (103,171,216), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/24), ((self.screen.get_size()[0]/5)*1.0*self.health/self.maxHealth,self.screen.get_size()[1]/90)))        
         font = pygame.font.Font(None, 36)
         text1 = font.render("Score: " + str(self.score), 1, (10, 10, 10))
-        text2 = font.render("Health: " + str(self.health), 1, (10, 10, 10))
+        text2 = font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
         text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
-        self.screen.blit(text1,(50,50))
-        self.screen.blit(text2,(self.screen.get_size()[0]-150,50))
-#        if self.gun.isEmpty():        
-#            self.screen.blit(text,(100,100))
+        self.screen.blit(text1,(50,self.screen.get_size()[1]/17))
+        self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/4.8,self.screen.get_size()[1]/17))
+#       if self.gun.isEmpty():        
+#           self.screen.blit(text,(100,100))
         
     def endGame(self):
         font = pygame.font.Font(None, 36)
@@ -265,8 +273,9 @@ class Main:
         
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud)
+        self.track = pygame.mixer.music.load('gogo.wav') 
+        pygame.mixer.music.play()
 
-                
     def update(self):
          # Set the FPS of the game
         self.clock.tick(60)
