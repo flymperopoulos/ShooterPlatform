@@ -81,12 +81,21 @@ class HUD:
 #           self.screen.blit(text,(100,100))
         
     def endGame(self):
-        font = pygame.font.Font(None, 36)
+        font = pygame.font.SysFont("Comic Sans MS", 20)
         text = font.render("Score: " + str(self.score), 1, (10, 10, 10))
         textpos = text.get_rect()
         textpos.centerx = self.screen.get_rect().centerx
         textpos.centery = self.screen.get_rect().centery
         self.screen.blit(text, textpos)
+
+    def pauseGame(self):
+        font = pygame.font.SysFont("Comic Sans MS", 20)
+        text = font.render("PAUSED",1, (10, 10, 10))
+        pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
+        # image = pygame.Surface([640,480], pygame.SRCALPHA, 32)
+        # image = image.convert_alpha()
+        self.screen.blit(text,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
+        # self.screen.blit(image,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
         
 class Background:
     
@@ -276,6 +285,8 @@ class Main:
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
+        self.pauses = False
+
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud)
         self.track = pygame.mixer.music.load('gogo.wav') 
@@ -310,11 +321,16 @@ class Main:
                         self.enMan.checkHit(pos)
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
+
                 if event.key == K_r:
                     self.gun.reloaded()
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
-                    
+
+                if event.key == K_p:
+                    self.pauses = not self.pauses
+
+                                        
             # if event.type == pygame.MOUSEBUTTONUP:
             #     pos = pygame.mouse.get_pos()
             #     for enemy in self.enemies[::-1]:
@@ -323,27 +339,33 @@ class Main:
             #             self.hud.scoreUp()
             #             break
 
-        if self.hud.health>0:
-            self.background.update()
-            self.cam.update()
-            self.enMan.update()
+        if self.pauses == False:
+            if self.hud.health>0:
+                self.background.update()
+                self.enMan.update()
+                self.cam.update()
+                self.gun.update()
 
-            size = self.screen.get_size()
-            pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
-            pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
-        
-            self.hud.update()
-        
-            self.gun.update()
-            if self.shooting:
-                s = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  # the size of your rect
-                s.set_alpha(128)                # alpha level
-                s.fill((255,255,255))           # this fills the entire surface
-                self.screen.blit(s, (0,0)) 
-                self.shooting = False
+                size = self.screen.get_size()
+                pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
+                pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
+            
+                self.hud.update()
+            
+                self.gun.update()
+                if self.shooting:
+                    s = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  # the size of your rect
+                    s.set_alpha(128)                # alpha level
+                    s.fill((255,255,255))           # this fills the entire surface
+                    self.screen.blit(s, (0,0)) 
+                    self.shooting = False
+            else:
+                self.hud.endGame()
         else:
-            self.hud.endGame()
-        
+            self.cam.update()
+            self.gun.update()
+            self.hud.pauseGame()
+
         pygame.display.flip()
 
 if __name__ == '__main__':
