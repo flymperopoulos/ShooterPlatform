@@ -300,7 +300,7 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-        self.gun = Gun(self.screen,self.cam, 100)
+        self.gun = Gun(self.screen,self.cam, 7)
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -350,8 +350,8 @@ class Main:
                 if event.key == K_p:
                     self.pauses = not self.pauses
                     self.gun.bulletShow = not self.gun.bulletShow
-                    # if self.gun.x == self.screen.get_size()[0]-self.screen.get_size()[0]/1.68 and self.gun.y == self.screen.get_size()[1]/2.5 and event.key == K_SPACE:
-                    #     self.pauses = False
+
+                if self.pauses==
                                         
             # if event.type == pygame.MOUSEBUTTONUP:
             #     pos = pygame.mouse.get_pos()
@@ -375,8 +375,7 @@ class Main:
                     self.gun.reloaded()
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
-    
-#                           
+                               
 #                if self.cam.green <60:
 #                    pos = (self.cam.x,self.cam.y)
 #                    if self.gun.isEmpty():
@@ -407,6 +406,7 @@ class Main:
         else:
             self.gun.bulletShow = False
             self.hud.pauseGame()
+
 
         pygame.display.flip()
 
