@@ -27,9 +27,9 @@ while(True):
     upper_blue = np.uint8([130,255,255])
 
     # define range of green color in HSV
-    lower_green = np.uint8([70, 50, 50])
+    lower_green = np.uint8([70, 60, 60])
     upper_green = np.uint8([100, 255, 255])
-    
+
     lower_red= np.uint8([10, 255, 50])
     upper_red = np.uint8([40, 255, 255])
 
@@ -54,6 +54,7 @@ while(True):
         
 #        cv2.circle(blue,(int(cam.get(3))-bx,by),30,255,-1)
 
+    # Added reflection on screen for color detection.
     if moment1['m00'] != 0:
         gx,gy = int(moment1['m10']/moment1['m00']), int(moment1['m01']/moment1['m00'])
         print len(np.where(green != 0)[0])
@@ -69,7 +70,7 @@ while(True):
     
 #    print blue
 #    print blue[0]
-    
+
 #    print len(np.where(blue != 0)[0])
 #    
     cv2.imshow('video',frame)
@@ -77,7 +78,9 @@ while(True):
     cv2.imshow('only blue',blue)
     
     cv2.imshow('some red', red)
+
     cv2.imshow('some green', green) 
+
     
     # Display the resulting frame
 #    cv2.imshow('frame',frame)  
