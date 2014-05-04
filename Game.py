@@ -75,7 +75,7 @@ class HUD:
         text1 = font.render("Score: " + str(self.score), 1, (10, 10, 10))
         text2 = font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
         text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
-        self.screen.blit(text1,(50,self.screen.get_size()[1]/17))
+        self.screen.blit(text1,(self.screen.get_size()[0]/12,self.screen.get_size()[1]/13))
         self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/5.1,self.screen.get_size()[1]/17))
 #       if self.gun.isEmpty():        
 #           self.screen.blit(text,(100,100))
@@ -125,9 +125,8 @@ class Gun:
         #self.x = pygame.mouse.get_pos()[0]
         #self.y = pygame.mouse.get_pos()[1]
         for i in range(1,self.ammo+1):
-            if i>0:
-                toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
-                self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/50))
+            toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
+            self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
 
         self.x = self.cam.x
         self.y = self.cam.y
