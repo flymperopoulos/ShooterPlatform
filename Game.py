@@ -138,6 +138,7 @@ class Gun:
         self.rAmmo = ammo
         self.bullet = pygame.image.load('bullet.png').convert_alpha()
         self.bulletShow = True
+        self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -155,7 +156,7 @@ class Gun:
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
             if self.isEmpty():
-                text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
+                text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
                 self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
         self.x = self.cam.x
         self.y = self.cam.y
@@ -487,7 +488,6 @@ class Enemy:
             if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
                 return True
         return False
-
         
 class Main:
     
@@ -502,6 +502,7 @@ class Main:
         self.screen = pygame.display.set_mode((width,height))
         pygame.display.set_caption('Shooter Platform')
         self.clock=pygame.time.Clock()
+        self.shooting = False
         
         self.background = Background(self.screen)
         
@@ -509,19 +510,27 @@ class Main:
         self.scaler = Scaler((1/900.0*size[1],600/900.0*size[1]),(330/900.0*size[0],570/900.0*size[0]),(28/900.0*size[0],866/900.0*size[0]))
                 
         self.cam = Camera(self.screen)
+
         self.gun = Gun(self.screen,self.cam, 7)
-        
+
+        # self.menu = Menu(self.screen,'Enter the Game')
+
+        self.pauses = False
+
+        self.button = pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
+
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud, 40, self.screen.get_size()[0]/20.0)
+        self.track = pygame.mixer.music.load('gogo.wav') 
+        pygame.mixer.music.play()
 
-                
     def update(self):
          # Set the FPS of the game
         self.clock.tick(60)
         
         # Clear the screen
         self.screen.fill([100,200,100])        
-        
+
         for event in pygame.event.get():
 
             if event.type==QUIT:
@@ -532,32 +541,53 @@ class Main:
                 if event.key == K_ESCAPE:
                     self.cam.endCam()
                     exit()
-                    
-                if event.key == K_SPACE:
+                if event.key == K_SPACE:  
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
-                    
                         break
                     else:
                         self.gun.ammo -= 1
+                        self.shooting = True
                         self.enMan.checkHit(pos)
-                if event.key == K_r:
-                    self.gun.reloaded()
-                    
-                    
-        if self.hud.health>0:
-            self.background.update()
-            self.cam.update()
-            self.enMan.update()
+                        self.track = pygame.mixer.music.load('shot.wav') 
+                        pygame.mixer.music.play()
 
-            size = self.screen.get_size()
+
+                if event.key == K_p:
+                    self.pauses = not self.pauses
+                    self.gun.bulletShow = not self.gun.bulletShow
+
+        self.cam.update()
+        self.gun.update()
+        if self.pauses == False:
+            if self.hud.health>0:
+                self.background.update()
+                self.enMan.update()
+                
+                if self.cam.blue <10:
+                    self.gun.reloaded()
+                    self.track = pygame.mixer.music.load('reloadFinal.wav')        
+                    pygame.mixer.music.play()
+                size = self.screen.get_size()
+                pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
+                pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
             
-            self.hud.update()
-        
-            self.gun.update()
+                self.hud.update()
+            
+                self.gun.update()
+                if self.shooting:
+                    s = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  # the size of your rect
+                    s.set_alpha(128)                # alpha level
+                    s.fill((255,255,255))           # this fills the entire surface
+                    self.screen.blit(s, (0,0)) 
+                    self.shooting = False
+            else:
+                self.hud.endGame()
+
         else:
-            self.hud.endGame()
-        
+            self.gun.bulletShow = False
+            self.hud.pauseGame()
+
         pygame.display.flip()
 
 if __name__ == '__main__':
