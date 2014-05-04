@@ -131,10 +131,10 @@ class Gun:
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))
-        font = pygame.font.Font(None, 36)
+        font = pygame.font.SysFont("Comic Sans MS", 20)
         if self.isEmpty():
-            text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
-            self.screen.blit(text3,(100,100))
+            text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
+            self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
                  
 class Scaler:
     
