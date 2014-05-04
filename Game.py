@@ -2,7 +2,7 @@
 """
 Created on Wed Apr 16 21:29:13 2014
 
-@author: 
+@authors: 
 Sidd Singal
 James Jang
 Filippos Lymperopoulos
@@ -18,8 +18,6 @@ from os.path import isfile, join
 import random
 import numpy as np
 import cv2
-
-
 
 class Camera:
     def __init__(self, screen):
@@ -51,7 +49,6 @@ class Camera:
     def endCam(self):
         self.cam.release()
         cv2.destroyAllWindows()
-
         
 class HUD:
     
@@ -70,16 +67,16 @@ class HUD:
         hurtEnem.set_alpha(100)                
         hurtEnem.fill((239,66,66))           
         self.screen.blit(hurtEnem, (0,0)) 
-        
+
     def update(self):
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/25), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/70)))
         pygame.draw.rect(self.screen, (103,171,216), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/24), ((self.screen.get_size()[0]/5)*1.0*self.health/self.maxHealth,self.screen.get_size()[1]/90)))        
-        font = pygame.font.Font(None, 36)
+        font = pygame.font.SysFont("Comic Sans MS", 20)
         text1 = font.render("Score: " + str(self.score), 1, (10, 10, 10))
         text2 = font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
         text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
         self.screen.blit(text1,(50,self.screen.get_size()[1]/17))
-        self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/4.8,self.screen.get_size()[1]/17))
+        self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/5.1,self.screen.get_size()[1]/17))
 #       if self.gun.isEmpty():        
 #           self.screen.blit(text,(100,100))
         
@@ -113,6 +110,8 @@ class Gun:
         self.gunSize = self.crosshair.get_size()
         self.ammo = ammo
         self.rAmmo = ammo
+        self.bullet = pygame.image.load('bullet.png').convert_alpha()
+
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -125,6 +124,11 @@ class Gun:
     def update(self):
         #self.x = pygame.mouse.get_pos()[0]
         #self.y = pygame.mouse.get_pos()[1]
+        for i in range(1,self.ammo+1):
+            if i>0:
+                toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
+                self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/50))
+
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))
@@ -164,8 +168,9 @@ class Wall:
         self.width = 2*self.height
         
     def update(self):
-        pygame.draw.rect(self.screen,(250,0,0),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.pos[0]+self.width/2.0),int(self.pos[1])))))
-  
+        # pygame.draw.rect(self.screen,(250,0,0),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.pos[0]+self.width/2.0),int(self.pos[1])))))
+        pass 
+
 class EnemyManager:
     def __init__(self,screen,scaler,hud):
         self.screen = screen
@@ -228,7 +233,6 @@ class Enemy:
         self.speed = 1
 
         # self.soundPlayed = False
-    
     def update(self):
         self.move()
         image = self.images['front2']
@@ -270,7 +274,9 @@ class Main:
                 
         self.cam = Camera(self.screen)
         self.gun = Gun(self.screen,self.cam, 7)
-        
+
+        # self.menu = Menu(self.screen,'Enter the Game')
+
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud)
         self.track = pygame.mixer.music.load('gogo.wav') 
@@ -282,7 +288,7 @@ class Main:
         
         # Clear the screen
         self.screen.fill([100,200,100])        
-        
+
         for event in pygame.event.get():
 
             if event.type==QUIT:
