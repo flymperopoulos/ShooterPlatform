@@ -90,7 +90,7 @@ class HUD:
 
     def pauseGame(self):
         font = pygame.font.SysFont("Comic Sans MS", 20)
-        text = font.render("PAUSED",1, (10, 10, 10))
+        text = font.render("Continue",1, (10, 10, 10))
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
         # image = pygame.Surface([640,480], pygame.SRCALPHA, 32)
         # image = image.convert_alpha()
@@ -120,7 +120,7 @@ class Gun:
         self.ammo = ammo
         self.rAmmo = ammo
         self.bullet = pygame.image.load('bullet.png').convert_alpha()
-
+        self.bulletShow = True
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -133,17 +133,17 @@ class Gun:
     def update(self):
         #self.x = pygame.mouse.get_pos()[0]
         #self.y = pygame.mouse.get_pos()[1]
-        for i in range(1,self.ammo+1):
-            toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
-            self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
-
+        if self.bulletShow:
+            for i in range(1,self.ammo+1):
+                toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
+                self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
+            if self.isEmpty():
+                text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
+                self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))
-        font = pygame.font.SysFont("Comic Sans MS", 20)
-        if self.isEmpty():
-            text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
-            self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
+        font = pygame.font.SysFont("Comic Sans MS", 20)            
                  
 class Scaler:
     
@@ -287,6 +287,8 @@ class Main:
 
         self.pauses = False
 
+        self.button = pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
+
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud)
         self.track = pygame.mixer.music.load('gogo.wav') 
@@ -329,7 +331,9 @@ class Main:
 
                 if event.key == K_p:
                     self.pauses = not self.pauses
-
+                    self.gun.bulletShow = not self.gun.bulletShow
+                    # if self.gun.x == self.screen.get_size()[0]-self.screen.get_size()[0]/1.68 and self.gun.y == self.screen.get_size()[1]/2.5 and event.key == K_SPACE:
+                    #     self.pauses = False
                                         
             # if event.type == pygame.MOUSEBUTTONUP:
             #     pos = pygame.mouse.get_pos()
@@ -339,12 +343,12 @@ class Main:
             #             self.hud.scoreUp()
             #             break
 
+        self.cam.update()
+        self.gun.update()
         if self.pauses == False:
             if self.hud.health>0:
                 self.background.update()
                 self.enMan.update()
-                self.cam.update()
-                self.gun.update()
 
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
@@ -362,8 +366,7 @@ class Main:
             else:
                 self.hud.endGame()
         else:
-            self.cam.update()
-            self.gun.update()
+            self.gun.bulletShow = False
             self.hud.pauseGame()
 
         pygame.display.flip()
