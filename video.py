@@ -27,8 +27,7 @@ while(True):
     upper_blue = np.uint8([130,255,255])
 
     # define range of green color in HSV
-    lower_green = np.uint8([70, 60, 60])
-    upper_green = np.uint8([100, 255, 255])
+ 
 
     lower_red= np.uint8([10, 255, 50])
     upper_red = np.uint8([40, 255, 255])
