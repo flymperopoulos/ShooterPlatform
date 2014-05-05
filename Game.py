@@ -612,9 +612,21 @@ class WallRow:
         for wall in self.walls:
             wall.update()
             
+'''
+EnemyManager
 
+
+'''
 class EnemyManager:
     
+    '''
+    __init__
+    
+    Initialize the EnemyManager class
+        parameters: 
+            
+        returns: none
+    '''    
     def __init__(self,screen,scaler,hud, initWallHeight, initGapWidth):
         self.screen = screen
         self.hud = hud
@@ -782,8 +794,27 @@ class EnemyManager:
     def makeWait(self, time):
         return [['wait',time]]
                     
+'''
+Enemy
+
+Enemy class
+'''
 class Enemy:
     
+    '''
+    __init__
+    
+    Initialize the Scalar class
+        parameters:
+            screen -
+            pos -
+            relPos -
+            level -
+            images -
+            scalar -
+
+        returns: none
+    '''    
     def __init__(self, screen, pos, relPos, level, images, scaler):
         
         self.screen=screen
