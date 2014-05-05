@@ -111,7 +111,7 @@ class HUD:
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
         # image = pygame.Surface([640,480], pygame.SRCALPHA, 32)
         # image = image.convert_alpha()
-        self.screen.blit(text,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
+        self.screen.blit(text,(self.screen.get_size()[0]/2.3,self.screen.get_size()[1]/2.4))
         # self.screen.blit(image,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
         
 class Background:
@@ -218,7 +218,6 @@ class WallRow:
         self.numGaps = numGaps
         self.last = last
         
-        
         if edged:
             self.positions = range(numGaps*2)
         else:
@@ -274,7 +273,6 @@ class WallRow:
         for wall in self.walls:
             wall.update()
             
-
 class EnemyManager:
     
     def __init__(self,screen,scaler,hud, initWallHeight, initGapWidth):
@@ -334,8 +332,7 @@ class EnemyManager:
             newEnemy.updateQueue([['forward',self.wallRows[0].yCover]])
             self.enemies.insert(0,newEnemy)
             self.newEnemyProb+=.001
-        
-                    
+                            
         for enemy in self.enemies:
             if enemy.status =='available':
                 #print enemy.level, enemy.relPos
@@ -492,7 +489,6 @@ class Enemy:
 class Main:
     
     def __init__(self):
-        
         # Initialize PyGame stuff
         pygame.init()
         infoObject = pygame.display.Info()
@@ -552,7 +548,6 @@ class Main:
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
-
                 if event.key == K_p:
                     self.pauses = not self.pauses
                     self.gun.bulletShow = not self.gun.bulletShow
@@ -585,8 +580,15 @@ class Main:
                 self.hud.endGame()
 
         else:
-            self.gun.bulletShow = False
             self.hud.pauseGame()
+            
+            if self.gun.x<self.screen.get_size()[0]-self.screen.get_size()[0]/1.68-(self.screen.get_size()[0]/5)/2 or self.gun.x >self.screen.get_size()[0]-self.screen.get_size()[0]/1.68+(self.screen.get_size()[0]/5)/2:
+                self.pauses = True
+            elif self.gun.y<self.screen.get_size()[1]-self.screen.get_size()[1]/1.68-(self.screen.get_size()[1]/10)/2 or self.gun.y >self.screen.get_size()[1]-self.screen.get_size()[1]/1.68+(self.screen.get_size()[1]/10)/2:
+                self.pauses = True
+            else:
+                self.pauses = False
+                self.gun.bulletShow = True
 
         pygame.display.flip()
 
