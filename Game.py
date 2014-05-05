@@ -2,7 +2,7 @@
 """
 Created on Wed Apr 16 21:29:13 2014
 
-@authors: 
+@author: 
 Sidd Singal
 James Jang
 Filippos Lymperopoulos
@@ -10,7 +10,6 @@ Filippos Lymperopoulos
 
 import pygame
 from pygame.locals import *
-import pygame as pyg
 import math
 import numpy as np
 from os import listdir
@@ -18,6 +17,7 @@ from os.path import isfile, join
 import random
 import numpy as np
 import cv2
+import time
 
 
 class Camera:
@@ -89,8 +89,13 @@ class Camera:
         
         
         if moment1['m00'] != 0:
+<<<<<<< HEAD
             self.green = len(np.where(green == 255)[0])
             print self.green
+=======
+            self.green = len(np.where(green != 0)[0]) 
+            #sprint self.green
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -104,6 +109,7 @@ class Camera:
     def endCam(self):
         self.cam.release()
         cv2.destroyAllWindows()
+
         
 class HUD:
     
@@ -112,6 +118,7 @@ class HUD:
         self.maxHealth = 10
         self.health = self.maxHealth
         self.screen = screen
+        self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
 
     def scoreUp(self):
         self.score+=1
@@ -126,26 +133,23 @@ class HUD:
     def update(self):
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/25), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/70)))
         pygame.draw.rect(self.screen, (103,171,216), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/24), ((self.screen.get_size()[0]/5)*1.0*self.health/self.maxHealth,self.screen.get_size()[1]/90)))        
-        font = pygame.font.SysFont("Comic Sans MS", 20)
-        text1 = font.render("Score: " + str(self.score), 1, (10, 10, 10))
-        text2 = font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
-        text3 = font.render("Gun is Empty", 1,(10, 10, 10))        
+        text1 = self.font.render("Score: " + str(self.score), 1, (10, 10, 10))
+        text2 = self.font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
+        text3 = self.font.render("Gun is Empty", 1,(10, 10, 10))        
         self.screen.blit(text1,(self.screen.get_size()[0]/12,self.screen.get_size()[1]/13))
         self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/5.1,self.screen.get_size()[1]/17))
 #       if self.gun.isEmpty():        
 #           self.screen.blit(text,(100,100))
         
     def endGame(self):
-        font = pygame.font.SysFont("Comic Sans MS", 20)
-        text = font.render("Score: " + str(self.score), 1, (10, 10, 10))
+        text = self.font.render("Score: " + str(self.score), 1, (10, 10, 10))
         textpos = text.get_rect()
         textpos.centerx = self.screen.get_rect().centerx
         textpos.centery = self.screen.get_rect().centery
         self.screen.blit(text, textpos)
 
     def pauseGame(self):
-        font = pygame.font.SysFont("Comic Sans MS", 20)
-        text = font.render("Continue",1, (10, 10, 10))
+        text = self.font.render("Continue",1, (10, 10, 10))
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
         # image = pygame.Surface([640,480], pygame.SRCALPHA, 32)
         # image = image.convert_alpha()
@@ -176,6 +180,7 @@ class Gun:
         self.rAmmo = ammo
         self.bullet = pygame.image.load('bullet.png').convert_alpha()
         self.bulletShow = True
+        self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -193,13 +198,17 @@ class Gun:
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
             if self.isEmpty():
+<<<<<<< HEAD
 #                text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
 #                self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
                 pass
+=======
+                text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
+                self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
         self.x = self.cam.x
         self.y = self.cam.y
-        self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))
-        font = pygame.font.SysFont("Comic Sans MS", 20)            
+        self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
                  
 class Scaler:
     
@@ -224,98 +233,310 @@ class Scaler:
     
 class Wall:
     
-    def __init__(self, screen, pos, height):
+    def __init__(self, screen, pos, width, height):
         
         self.screen = screen
         self.pos = pos
         self.height = height
-        self.width = 2*self.height
+        self.width = width
+        
+    def isHit(self,pos):
+        
+        if pos[0]<self.pos[0]-self.width/2 or pos[0]<self.pos[0]+self.width/2:
+            return False
+        elif pos[1]<self.pos[1]-self.height or pos[1]>self.pos[1]:
+            return False
+        else:
+            return True
         
     def update(self):
-        # pygame.draw.rect(self.screen,(250,0,0),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.pos[0]+self.width/2.0),int(self.pos[1])))))
-        pass 
+        pygame.draw.rect(self.screen,(100,100,100),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.width),int(self.height)))))
+        
+  
+class WallRow:
+    
+    def __init__(self,screen,yPos,height,scaler,edged, gapWidth, numGaps, last):
+        
+        self.screen = screen
+        self.yPos = yPos
+        self.height=height
+        self.scaler=scaler
+        self.edged = edged
+        self.gapWidth = gapWidth
+        self.numGaps = numGaps
+        self.last = last
+        
+        
+        if edged:
+            self.positions = range(numGaps*2)
+        else:
+            self.positions = range((numGaps-1)*2)
+        self.xCovers = []
+        self.xExits = []
+        self.yCover = yPos - height*.2
+        roadWidth = scaler.scale(yPos,scaler.xRange1[1]-scaler.xRange1[0])*(scaler.xRange1[1]-scaler.xRange1[0])
+        walls = 0
+        if edged:
+            walls = numGaps + 1
+        else:
+            walls = numGaps - 1
+            
+        wallWidth = (roadWidth - numGaps*gapWidth)/walls
+        
+        self.walls = []
+        xInit = self.scaler.findX(self.yPos,0)
+        if edged:
+            for i in range(numGaps+1):
+                xPos = i*wallWidth+i*gapWidth+wallWidth/2+xInit
+                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height))
+                roadBeginning = self.scaler.findX(yPos,0)
+                if i==0:
+                    self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
+                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
+                elif i==numGaps:
+                    self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
+                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
+                else:
+                    self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
+                    self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
+                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
+                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
+        else:
+            for i in range(numGaps-1):
+                roadBeginning = self.scaler.findX(yPos,0)
+                xPos = i*wallWidth+i*gapWidth+wallWidth/2+gapWidth+xInit
+                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height))
+                self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
+                self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
+                self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
+                self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
+                
+    def isHit(self,pos):
+        
+        for wall in self.walls:
+            if wall.isHit(pos):
+                return True
+        return False
+        
+    def update(self):
+        for wall in self.walls:
+            wall.update()
+            
 
 class EnemyManager:
-    def __init__(self,screen,scaler,hud):
+    
+    def __init__(self,screen,scaler,hud, initWallHeight, initGapWidth):
         self.screen = screen
         self.hud = hud
         self.enemies = []
-        self.walls = []
+        self.wallRows = []
         self.newEnemyProb = .01
         self.enemyImages = {}
         self.scaler = scaler
-        self.walls.append(Wall(self.screen,(100,100),20))
+        self.initWallHeight = initWallHeight
+        self.initGapWidth = initGapWidth
 
         enemyFiles = [ f for f in listdir('SoldierSprite/') if isfile(join('SoldierSprite/',f)) ]
         for f in enemyFiles:
             image = pygame.image.load('SoldierSprite/'+f)
             resized = pygame.transform.scale(image,(25,int(25.0/image.get_size()[0]*image.get_size()[1])))
             self.enemyImages[f[0:-4]]=resized
-        
-    def updateEnemies(self):
-        if random.random()<=self.newEnemyProb:
-            self.enemies.insert(0,Enemy(self.screen,(random.random(),1),self.enemyImages,self.scaler))
-            self.newEnemyProb+=.001
             
-        for enemy in self.enemies:
-            enemy.update()
-            if enemy.pos[1]>900:
-                self.enemies.remove(enemy)
-                self.hud.hurt()
-
+        self.createWalls(5,.1,.9)
+        
     def checkHit(self,pos):
+        self.enemies = sorted(self.enemies, key=lambda enemy: enemy.pos[1])
+        minY = 0;
+        for wallRow in self.wallRows:
+            if wallRow.isHit(pos):
+                minY = wallRow.yPos
         for enemy in self.enemies[::-1]:
-            if enemy.isHit(pos):
+            if enemy.isHit(pos) and enemy.pos[1]+enemy.height>minY:
                 self.enemies.remove(enemy)
                 self.hud.scoreUp()
                 break
 
-    def createWalls(self):
-        pass
+    def createWalls(self, rows, minRelY, maxRelY):
+        edged = False
+        gaps = 3
+        gapTemp = 0
+        
+        for i in range(rows):
+            yTemp = (i*1.0/rows)**1.5
+            yRange = maxRelY-minRelY
+            yPos = (yTemp*yRange+minRelY)*self.screen.get_size()[1]
+            gapWidth = self.scaler.scale(yPos,self.initGapWidth)*self.initGapWidth
+            height = self.scaler.scale(yPos,self.initWallHeight)*self.initWallHeight
+            self.wallRows.append(WallRow(self.screen,yPos,height,self.scaler,edged,gapWidth,gaps-gapTemp,False))
+            edged = not edged
+            gapTemp = 1-gapTemp
+            
+        self.wallRows[-1].last=True
 
     def update(self):
-        self.updateEnemies()
+        
+        if random.random()<=self.newEnemyProb:
+            index = random.randint(0,len(self.wallRows[0].xCovers)-1)
+            pos = self.wallRows[0].xCovers[index]
+            newEnemy = Enemy(self.screen,(pos,1),index,0,self.enemyImages,self.scaler)
+            newEnemy.updateQueue([['forward',self.wallRows[0].yCover]])
+            self.enemies.insert(0,newEnemy)
+            self.newEnemyProb+=.001
+        
+                    
+        for enemy in self.enemies:
+            if enemy.status =='available':
+                #print enemy.level, enemy.relPos
+                if not self.wallRows[enemy.level].last:
+                    index = random.randint(0,len(self.wallRows[enemy.level+1].xCovers)-1)
+                    pos = self.wallRows[enemy.level+1].xCovers[index]
+                    enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,self.wallRows[enemy.level+1],index))
+                    enemy.updatePosition(index,enemy.level+1)                
+                else:
+                    enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,None,None))
+                    
+                #print enemy.level, enemy.relPos
+           
+        for enemy in self.enemies:
+            if enemy.pos[1]>self.screen.get_size()[0]:
+                self.enemies.remove(enemy)
+                self.hud.hurt()
+                
+        self.enemies = sorted(self.enemies, key=lambda enemy: enemy.pos[1])
+                
+        entities = len(self.wallRows)+len(self.enemies)
+        wrCounter = 0
+        enemyCounter = 0
+        while enemyCounter + wrCounter < entities:
+            if enemyCounter == len(self.enemies):
+                for i in range(wrCounter,len(self.wallRows)):
+                    self.wallRows[i].update()
+                    wrCounter=len(self.wallRows)
+            elif wrCounter == len(self.wallRows):
+                for i in range(enemyCounter,len(self.enemies)):
+                    self.enemies[i].update()
+                    enemyCounter=len(self.enemies)
+            else:
+                wallY = self.wallRows[wrCounter].yPos
+                enemyY = self.enemies[enemyCounter].pos[1]
+                if enemyY>wallY:
+                    self.wallRows[wrCounter].update()
+                    wrCounter+=1
+                else:
+                    self.enemies[enemyCounter].update()
+                    enemyCounter+=1
+                
+    def getPath(self, wallRowOld, wallRowOldPos, wallRowNew, wallRowNewPos):
+        
+        directions = []
 
-        for wall in self.walls:
-            wall.update()
-
+        if wallRowOld.edged:
+            if wallRowOldPos%2==0:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+        else:
+            if wallRowOldPos%2==0:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+                
+        if wallRowOld.last:
+            directions.append(['forward',self.screen.get_size()[1]+100])
+        else:
+            directions.append(['forward',wallRowNew.yCover])
+            lastDir = 'left'
+            if wallRowOld.xExits[wallRowOldPos] < wallRowNew.xCovers[wallRowNewPos]:
+                lastDir = 'right'
+                
+            directions.append([lastDir,wallRowNew.xCovers[wallRowNewPos]])
+        #print 'Directions',directions
+        return directions
+                    
 class Enemy:
     
-    def __init__(self, screen, pos, images, scaler):
+    def __init__(self, screen, pos, relPos, level, images, scaler):
         
         self.screen=screen
         self.pos=pos
+        self.relPos = relPos
+        self.level = level
         self.images = images
         self.scaler = scaler
-#       self.health = health
         self.initWidth = 25.0
         self.initSpeed = 2.0
-        self.oldDirection = 'still'
-        self.direction = 'forward'
+        self.status = 'available'
+        self.direction = 'none'
+        self.target = -1
         self.walkCounter = 0
         self.wait = 10 
-        self.speed = 1
-
-        # self.soundPlayed = False
+        self.height = 0
+        self.width = 0
+        self.queue = []
+        
+    def updatePosition(self,relPos,level):
+        self.relPos = relPos
+        self.level = level
+        
+    def updateQueue(self,directions):
+        
+        self.queue.extend(directions)
+        
     def update(self):
+        
         self.move()
+        
         image = self.images['front2']
         scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
-        toDisplay = pygame.transform.scale(image,(int(scaleFactor*image.get_size()[0]),int(scaleFactor*image.get_size()[1])))
-        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0]),self.pos[1]))
+        self.height = int(scaleFactor*image.get_size()[1])
+        self.width = int(scaleFactor*image.get_size()[0])
+        toDisplay = pygame.transform.scale(image,(self.width,self.height))
+        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
         
     def move(self):
-        speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
-        self.pos = (self.pos[0],self.pos[1]+speed)
+        
+        if self.status != 'available':
+            speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
+            if self.direction=='forward':
+                self.pos = (self.pos[0],self.pos[1]+speed)
+                if self.pos[1] > self.target:
+                    self.pos = (self.pos[0],self.target)
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='left':
+                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
+                self.pos = (self.pos[0]-speed/roadWidth,self.pos[1])
+                if self.pos[0] < self.target:
+                    self.pos = (self.target,self.pos[1])
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='right':
+                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
+                self.pos = (self.pos[0]+speed/roadWidth,self.pos[1])
+                if self.pos[0] > self.target:
+                    self.pos = (self.target,self.pos[1])
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+        if self.status=='available' and len(self.queue)>0:
+            self.status='moving'
+            self.direction=self.queue[0][0]
+#            if self.queue[0][0]=='left' or self.queue[0][0]=='right': 
+#                self.target = self.scaler.findX(self.pos[1],self.queue[0][1])
+#            elif self.queue[0][0]=='forward':
+#                self.target = self.queue[0][1]
+            self.target=self.queue[0][1]
+            self.queue.remove(self.queue[0])
         
     def isHit(self,pos):
-        minPoint = (self.scaler.findX(self.pos[1],self.pos[0]),self.pos[1])
-        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
-        if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.initWidth*scaleFactor):
-            if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.images['front2'].get_size()[1]*scaleFactor):
+        minPoint = (self.scaler.findX(self.pos[1],self.pos[0])-self.width/2.0,self.pos[1]-self.height)
+        if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.width):
+            if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
                 return True
         return False
-            
+        
 class Main:
     
     def __init__(self):
@@ -341,7 +562,7 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-        self.gun = Gun(self.screen,self.cam, 100)
+        self.gun = Gun(self.screen,self.cam, 7)
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -350,7 +571,7 @@ class Main:
         self.button = pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
 
         self.hud = HUD(self.screen)
-        self.enMan = EnemyManager(self.screen,self.scaler,self.hud)
+        self.enMan = EnemyManager(self.screen,self.scaler,self.hud, 40, self.screen.get_size()[0]/20.0)
         self.track = pygame.mixer.music.load('gogo.wav') 
         pygame.mixer.music.play()
 
@@ -380,9 +601,13 @@ class Main:
                 if event.key == K_ESCAPE:
                     self.cam.endCam()
                     exit()
+<<<<<<< HEAD
                     
                 if event.key == K_SPACE:
                     # self.soundPlayed = True       
+=======
+                if event.key == K_SPACE:  
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
                         break
@@ -393,24 +618,10 @@ class Main:
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
-#                if event.key == K_r:
-#                    self.gun.reloaded()
-#                    self.track = pygame.mixer.music.load('reloadFinal.wav')        
-#                    pygame.mixer.music.play()
 
                 if event.key == K_p:
                     self.pauses = not self.pauses
                     self.gun.bulletShow = not self.gun.bulletShow
-                    # if self.gun.x == self.screen.get_size()[0]-self.screen.get_size()[0]/1.68 and self.gun.y == self.screen.get_size()[1]/2.5 and event.key == K_SPACE:
-                    #     self.pauses = False
-                                        
-            # if event.type == pygame.MOUSEBUTTONUP:
-            #     pos = pygame.mouse.get_pos()
-            #     for enemy in self.enemies[::-1]:
-            #         if enemy.isHit(pos):
-            #             self.enemies.remove(enemy)
-            #             self.hud.scoreUp()
-            #             break
 
         self.cam.update()
         self.gun.update()
@@ -418,12 +629,16 @@ class Main:
             if self.hud.health>0:
                 self.background.update()
                 self.enMan.update()
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 
                 if self.cam.blue <10:
                     self.gun.reloaded()
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
+<<<<<<< HEAD
     
 #                           
                 if self.cam.green <5:
@@ -437,6 +652,8 @@ class Main:
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
+=======
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
                 pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
