@@ -207,6 +207,8 @@ class Shotgun(Gun):
         self.hitRadius = self.screen.get_size()[1]/20
         self.numShot = 1000
         self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
+        self.track = pygame.mixer.music.load('gogo.wav') 
+        pygame.mixer.music.play()
         
 class Scaler:
     
@@ -701,6 +703,14 @@ class Main:
                             i+=1
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
+                if event.key == K_r:
+                    self.gun.reloaded()
+                    try:
+                        self.track = pygame.mixer.music.load('reloadFinal.wav')        
+                        pygame.mixer.music.play()
+                    except ValueError:
+                        pass
+
 
                 if event.key == K_p:
                     self.pauses = not self.pauses
