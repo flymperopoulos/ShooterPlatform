@@ -108,7 +108,7 @@ class HUD:
     
     def __init__(self,screen):
         self.score = 0
-        self.maxHealth = 10
+        self.maxHealth = 100
         self.health = self.maxHealth
         self.screen = screen
         self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
@@ -117,12 +117,20 @@ class HUD:
         self.score+=1
         
     def hurt(self):
-        self.health-=1
+        self.health-=10
         hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
         hurtEnem.set_alpha(100)                
         hurtEnem.fill((239,66,66))           
         self.screen.blit(hurtEnem, (0,0)) 
 
+
+    def shot(self):
+        self.health-=1
+        hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
+        hurtEnem.set_alpha(100)                
+        hurtEnem.fill((239,66,66))           
+        self.screen.blit(hurtEnem, (0,0)) 
+        
     def update(self):
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/25), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/70)))
         pygame.draw.rect(self.screen, (103,171,216), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/24), ((self.screen.get_size()[0]/5)*1.0*self.health/self.maxHealth,self.screen.get_size()[1]/90)))        
@@ -205,7 +213,7 @@ class Shotgun(Gun):
     def __init__(self,screen,cam, ammo):
         super(Shotgun, self).__init__(screen, cam, ammo)
         self.hitRadius = self.screen.get_size()[1]/20
-        self.numShot = 1000
+        self.numShot = 25
         self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
         
 class Scaler:
@@ -385,9 +393,9 @@ class EnemyManager:
                     
         for enemy in self.enemies:
             if enemy.status =='available':
-                shootProb = .3
-                waitProb = .4
-                advanceProb = .3
+                shootProb = .2
+                waitProb = .3
+                advanceProb = .5
                 choice = random.random()
                 if choice < shootProb:
                     enemy.updateQueue(self.sendShoot(self.wallRows[enemy.level], enemy.relPos, 3.0))
@@ -403,6 +411,9 @@ class EnemyManager:
                         enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,None,None))
                     
         for enemy in self.enemies:
+            if enemy.hurtUser:
+                enemy.hurtUser = False
+                self.hud.shot()
             if enemy.pos[1]>self.screen.get_size()[0]:
                 self.enemies.remove(enemy)
                 self.hud.hurt()
@@ -511,6 +522,8 @@ class Enemy:
         self.timer = -1
         self.wait = .1
         self.shootingTimer = -1
+        self.hurtUser = False;
+        self.hurtUserProb = .01
         
     def updatePosition(self,relPos,level):
         self.relPos = relPos
@@ -559,6 +572,8 @@ class Enemy:
             elif self.currentPic =='right3':
                 self.currentPic = 'right1'
             elif self.currentPic =='shoot1':
+                if random.random() < self.hurtUserProb:
+                    self.hurtUser = True
                 self.currentPic = 'shoot2'
             elif self.currentPic =='shoot2':
                 self.currentPic = 'shoot1'
@@ -657,6 +672,7 @@ class Main:
         self.hud = HUD(self.screen)
         self.enMan = EnemyManager(self.screen,self.scaler,self.hud, 40, self.screen.get_size()[0]/20.0)
         self.track = pygame.mixer.music.load('gogo.wav') 
+        self.shot = False
         pygame.mixer.music.play()
 
     def update(self):
@@ -723,12 +739,13 @@ class Main:
                     except ValueError:
                         pass
 
-                if self.cam.green == 0:
+                elif self.cam.green == 0:
                     pos = (self.cam.x,self.cam.y)
                     
                     if self.gun.isEmpty():
                         pass
-                    else:
+                    elif not self.shot:
+                        self.shot = True
                         self.gun.ammo -= 1
                         self.shooting = True
                         self.enMan.checkHit(pos)
@@ -739,7 +756,9 @@ class Main:
                             i+=1
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
-
+                else:
+                    self.shot = False
+                        
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
                 pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
