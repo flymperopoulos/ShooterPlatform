@@ -558,8 +558,8 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-#        self.gun = Gun(self.screen,self.cam, 100)
-        self.gun = Shotgun(self.screen,self.cam, 100)
+        self.gunChoice = [Gun(self.screen,self.cam, 100),Shotgun(self.screen,self.cam, 100)]
+        self.gun = self.gunChoice[0]
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -621,6 +621,8 @@ class Main:
 
         self.cam.update()
         self.gun.update()
+        if self.hud.score > 10:
+            self.gun = self.gunChoice[1]
         if self.pauses == False:
             if self.hud.health>0:
                 self.background.update()
