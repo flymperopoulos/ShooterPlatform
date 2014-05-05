@@ -27,31 +27,68 @@ class Camera:
         self.screen = screen
         self.blue = 0
         self.green = 0
+        self.realgreen = 0
+        self.realblue = 0
+    
+    def calibrate(self):
+        ret, frame = self.cam.read()
+#        
+#        lower_green = np.uint8([60, 60, 60])
+#        upper_green = np.uint8([90, 255, 255])
+
+        lower_green = np.uint8([40, 100, 100])
+        upper_green = np.uint8([70, 255, 255])
+        
+        lower_blue = np.uint8([110, 100, 100])
+        upper_blue = np.uint8([130,255,255])
+        
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        green = cv2.inRange(hsv, lower_green, upper_green)
+        blue = cv2.inRange(hsv, lower_blue, upper_blue)
+        
+        self.realgreen += green
+        self.realblue += blue
+    
+    def endCalibration(self):
+        self.realgreen[np.where(self.realgreen != 0)] = 255
+        cv2.imwrite('initalgreen.png', self.realgreen)
+        self.realgreen = cv2.imread('initalgreen.png', 0)
+            
+        self.realblue[np.where(self.realblue != 0)] = 255
+        cv2.imwrite('initalblue.png', self.realblue)
+        self.realblue = cv2.imread('initalgreen.png', 0)
+#        print len(np.where(self.realblue == 255))
+        cv2.destroyAllWindows()
         
     def update(self):
         # Capture frame-by-frame
         ret, frame = self.cam.read()
-        
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
         # define range of blue color in HSV
         lower_blue = np.uint8([110, 100, 100])
         upper_blue = np.uint8([130,255,255])
             
-        lower_green = np.uint8([60, 60, 60])
-        upper_green = np.uint8([90, 255, 255])
-        # Threshold the HSV image to get only blue colors
+#        lower_green = np.uint8([60, 60, 60])
+#        upper_green = np.uint8([90, 255, 255])
+
+        lower_green = np.uint8([40, 100, 100])
+        upper_green = np.uint8([70, 255, 255])
+        
         blue = cv2.inRange(hsv, lower_blue, upper_blue)
         green = cv2.inRange(hsv, lower_green, upper_green)
+    
+#        green = green - self.realgreen
+#        blue = blue - self.realblue
         
         moment = cv2.moments(blue)
         
-        moment1 = cv2.moments(green)
+        moment1 = cv2.moments(green) 
         
-        
-        if moment1['m00'] != 0:
-            self.green = len(np.where(green != 0)[0]) 
-            #sprint self.green
+#        if moment1['m00'] != 0:
+        self.green = len(np.where(green != 0)[0])
+#        print self.green
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -59,10 +96,8 @@ class Camera:
             camHeight = self.cam.get(4)
             self.x = int((1.0*self.cam.get(3)-x)/camWidth*self.screen.get_size()[0])
             self.y = int((1.0*y)/camHeight*self.screen.get_size()[1])
-#            print len(np.where(blue != 0)[0])
-#            print len(blue)
-#            self.blue = len(np.where(blue != 0)[0])
-            self.blue = len(np.where(blue != 0)[0])
+            self.blue = len(np.where(blue == 255)[0])
+            
     
     def endCam(self):
         self.cam.release()
@@ -125,7 +160,7 @@ class Background:
         
         self.screen.blit(self.bgImage,(0,0))
         
-class Gun:
+class Gun(object):
     
     def __init__(self,screen,cam, ammo):
         self.x = 0
@@ -139,6 +174,8 @@ class Gun:
         self.bullet = pygame.image.load('bullet.png').convert_alpha()
         self.bulletShow = True
         self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
+        self.hitRadius = self.screen.get_size()[1]/100
+        self.numShot =1
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -156,12 +193,21 @@ class Gun:
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
             if self.isEmpty():
+
                 text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
                 self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
+
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
-                 
+
+class Shotgun(Gun):
+    def __init__(self,screen,cam, ammo):
+        super(Shotgun, self).__init__(screen, cam, ammo)
+        self.hitRadius = self.screen.get_size()[1]/20
+        self.numShot = 1000
+        self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
+        
 class Scaler:
     
     def __init__(self, yRange, xRange1, xRange2):
@@ -194,7 +240,7 @@ class Wall:
         
     def isHit(self,pos):
         
-        if pos[0]<self.pos[0]-self.width/2 or pos[0]<self.pos[0]+self.width/2:
+        if pos[0]<self.pos[0]-self.width/2 or pos[0]>self.pos[0]+self.width/2:
             return False
         elif pos[1]<self.pos[1]-self.height or pos[1]>self.pos[1]:
             return False
@@ -302,8 +348,9 @@ class EnemyManager:
         for wallRow in self.wallRows:
             if wallRow.isHit(pos):
                 minY = wallRow.yPos
+        print minY
         for enemy in self.enemies[::-1]:
-            if enemy.isHit(pos) and enemy.pos[1]+enemy.height>minY:
+            if enemy.isHit(pos) and enemy.pos[1]>minY:
                 self.enemies.remove(enemy)
                 self.hud.scoreUp()
                 break
@@ -338,17 +385,23 @@ class EnemyManager:
                     
         for enemy in self.enemies:
             if enemy.status =='available':
-                #print enemy.level, enemy.relPos
-                if not self.wallRows[enemy.level].last:
-                    index = random.randint(0,len(self.wallRows[enemy.level+1].xCovers)-1)
-                    pos = self.wallRows[enemy.level+1].xCovers[index]
-                    enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,self.wallRows[enemy.level+1],index))
-                    enemy.updatePosition(index,enemy.level+1)                
-                else:
-                    enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,None,None))
+                shootProb = .3
+                waitProb = .4
+                advanceProb = .3
+                choice = random.random()
+                if choice < shootProb:
+                    enemy.updateQueue(self.sendShoot(self.wallRows[enemy.level], enemy.relPos, 3.0))
+                elif choice < shootProb + waitProb:
+                    enemy.updateQueue(self.makeWait(3.0))
+                elif choice < shootProb + waitProb + advanceProb:
+                    if not self.wallRows[enemy.level].last:
+                        index = random.randint(0,len(self.wallRows[enemy.level+1].xCovers)-1)
+                        pos = self.wallRows[enemy.level+1].xCovers[index]
+                        enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,self.wallRows[enemy.level+1],index))
+                        enemy.updatePosition(index,enemy.level+1)                
+                    else:
+                        enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,None,None))
                     
-                #print enemy.level, enemy.relPos
-           
         for enemy in self.enemies:
             if enemy.pos[1]>self.screen.get_size()[0]:
                 self.enemies.remove(enemy)
@@ -404,6 +457,34 @@ class EnemyManager:
             directions.append([lastDir,wallRowNew.xCovers[wallRowNewPos]])
         #print 'Directions',directions
         return directions
+        
+    def sendShoot(self, wallRowOld, wallRowOldPos, time):
+        
+        directions = []
+        
+        if wallRowOld.edged:
+            if wallRowOldPos%2==0:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+        else:
+            if wallRowOldPos%2==0:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+                
+        
+        directions.append(['shoot',time])
+        
+        if directions[0][0] == 'left':
+            directions.append(['right',wallRowOld.xCovers[wallRowOldPos]])
+        else:
+            directions.append(['left',wallRowOld.xCovers[wallRowOldPos]])
+            
+        return directions
+        
+    def makeWait(self, time):
+        return [['wait',time]]
                     
 class Enemy:
     
@@ -419,12 +500,17 @@ class Enemy:
         self.initSpeed = 2.0
         self.status = 'available'
         self.direction = 'none'
+        self.oldDirection = self.direction
         self.target = -1
         self.walkCounter = 0
         self.wait = 10 
         self.height = 0
         self.width = 0
         self.queue = []
+        self.currentPic = 'front2'
+        self.timer = -1
+        self.wait = .1
+        self.shootingTimer = -1
         
     def updatePosition(self,relPos,level):
         self.relPos = relPos
@@ -437,14 +523,51 @@ class Enemy:
     def update(self):
         
         self.move()
+        image = self.getImage()
         
-        image = self.images['front2']
         scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
         self.height = int(scaleFactor*image.get_size()[1])
         self.width = int(scaleFactor*image.get_size()[0])
         toDisplay = pygame.transform.scale(image,(self.width,self.height))
         self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
         
+    def getImage(self):
+        
+        if self.oldDirection!=self.direction:
+            self.timer = time.time()
+            if self.direction == 'forward':
+                self.currentPic = 'front1'
+            elif self.direction == 'left':
+                self.currentPic = 'left1'
+            elif self.direction == 'right':
+                self.currentPic = 'right1'
+            elif self.direction == 'shoot':
+                self.currentPic = 'shoot1'
+            else:
+                self.currentPic = 'front2'
+        elif time.time() - self.timer > self.wait:
+            if self.currentPic == 'front1':
+                self.currentPic = 'front3'
+            elif self.currentPic == 'left1':
+                self.currentPic = 'left3'
+            elif self.currentPic =='right1':
+                self.currentPic = 'right3'
+            elif self.currentPic == 'front3':
+                self.currentPic = 'front1'
+            elif self.currentPic == 'left3':
+                self.currentPic = 'left1'
+            elif self.currentPic =='right3':
+                self.currentPic = 'right1'
+            elif self.currentPic =='shoot1':
+                self.currentPic = 'shoot2'
+            elif self.currentPic =='shoot2':
+                self.currentPic = 'shoot1'
+            self.timer = time.time()
+            
+        self.oldDirection = self.direction
+            
+        return self.images[self.currentPic]
+    
     def move(self):
         
         if self.status != 'available':
@@ -472,13 +595,22 @@ class Enemy:
                     self.status='available'
                     self.direction='none'
                     self.target=-1
+            elif self.direction=='shoot':
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='wait':
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+                
         if self.status=='available' and len(self.queue)>0:
             self.status='moving'
             self.direction=self.queue[0][0]
-#            if self.queue[0][0]=='left' or self.queue[0][0]=='right': 
-#                self.target = self.scaler.findX(self.pos[1],self.queue[0][1])
-#            elif self.queue[0][0]=='forward':
-#                self.target = self.queue[0][1]
+            if self.direction == 'shoot' or self.direction == 'wait':
+                self.shootingTimer = time.time()
             self.target=self.queue[0][1]
             self.queue.remove(self.queue[0])
         
@@ -492,7 +624,6 @@ class Enemy:
 class Main:
     
     def __init__(self):
-        
         # Initialize PyGame stuff
         pygame.init()
         infoObject = pygame.display.Info()
@@ -502,6 +633,9 @@ class Main:
         self.screen = pygame.display.set_mode((width,height))
         pygame.display.set_caption('Shooter Platform')
         self.clock=pygame.time.Clock()
+        
+        self.doCalibrate = True
+        
         self.shooting = False
         
         self.background = Background(self.screen)
@@ -511,7 +645,8 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-        self.gun = Gun(self.screen,self.cam, 7)
+        self.gunChoice = [Gun(self.screen,self.cam, 10),Shotgun(self.screen,self.cam, 10)]
+        self.gun = self.gunChoice[0]
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -529,8 +664,17 @@ class Main:
         self.clock.tick(60)
         
         # Clear the screen
-        self.screen.fill([100,200,100])        
+        self.screen.fill([100,200,100])
+     
+        if self.doCalibrate:
+            i = 0
+            while i<100:
+                self.cam.calibrate()
+                i +=1
+            self.cam.endCalibration()
+            self.doCalibrate = False
 
+        
         for event in pygame.event.get():
 
             if event.type==QUIT:
@@ -542,6 +686,7 @@ class Main:
                     self.cam.endCam()
                     exit()
                 if event.key == K_SPACE:  
+
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
                         break
@@ -549,9 +694,13 @@ class Main:
                         self.gun.ammo -= 1
                         self.shooting = True
                         self.enMan.checkHit(pos)
+                        i = 0                        
+                        while i < self.gun.numShot:
+                            newpos = (pos[0]+self.gun.hitRadius/(random.random() +1), pos[1] + self.gun.hitRadius/(random.random()+1))
+                            self.enMan.checkHit(newpos)
+                            i+=1
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
-
 
                 if event.key == K_p:
                     self.pauses = not self.pauses
@@ -559,6 +708,8 @@ class Main:
 
         self.cam.update()
         self.gun.update()
+        if self.hud.score > 10:
+            self.gun = self.gunChoice[1]
         if self.pauses == False:
             if self.hud.health>0:
                 self.background.update()
@@ -566,8 +717,29 @@ class Main:
                 
                 if self.cam.blue <10:
                     self.gun.reloaded()
-                    self.track = pygame.mixer.music.load('reloadFinal.wav')        
-                    pygame.mixer.music.play()
+                    try:
+                        self.track = pygame.mixer.music.load('reloadFinal.wav')        
+                        pygame.mixer.music.play()
+                    except ValueError:
+                        pass
+
+                if self.cam.green == 0:
+                    pos = (self.cam.x,self.cam.y)
+                    
+                    if self.gun.isEmpty():
+                        pass
+                    else:
+                        self.gun.ammo -= 1
+                        self.shooting = True
+                        self.enMan.checkHit(pos)
+                        i = 0                        
+                        while i < self.gun.numShot:
+                            newpos = (pos[0]+self.gun.hitRadius/(random.random() +1), pos[1] + self.gun.hitRadius/(random.random()+1))
+                            self.enMan.checkHit(newpos)
+                            i+=1
+                        self.track = pygame.mixer.music.load('shot.wav') 
+                        pygame.mixer.music.play()
+
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
                 pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
@@ -585,12 +757,20 @@ class Main:
                 self.hud.endGame()
 
         else:
-            self.gun.bulletShow = False
             self.hud.pauseGame()
+            
+            if self.gun.x<self.screen.get_size()[0]-self.screen.get_size()[0]/1.68-(self.screen.get_size()[0]/5)/2 or self.gun.x >self.screen.get_size()[0]-self.screen.get_size()[0]/1.68+(self.screen.get_size()[0]/5)/2:
+                self.pauses = True
+            elif self.gun.y<self.screen.get_size()[1]-self.screen.get_size()[1]/1.68-(self.screen.get_size()[1]/10)/2 or self.gun.y >self.screen.get_size()[1]-self.screen.get_size()[1]/1.68+(self.screen.get_size()[1]/10)/2:
+                self.pauses = True
+            else:
+                self.pauses = False
+                self.gun.bulletShow = True
 
         pygame.display.flip()
 
 if __name__ == '__main__':
+  
     game = Main()
     while True:
         game.update()
