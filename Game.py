@@ -19,6 +19,7 @@ import numpy as np
 import cv2
 import time
 
+
 class Camera:
     def __init__(self, screen):
         self.cam = cv2.VideoCapture(0)
@@ -27,31 +28,74 @@ class Camera:
         self.screen = screen
         self.blue = 0
         self.green = 0
+        self.realgreen = 0
+        self.realblue = 0
+    
+    def calibrate(self):
+        ret, frame = self.cam.read()
+#        
+#        lower_green = np.uint8([60, 60, 60])
+#        upper_green = np.uint8([90, 255, 255])
+
+        lower_green = np.uint8([40, 100, 100])
+        upper_green = np.uint8([70, 255, 255])
+        
+        lower_blue = np.uint8([110, 100, 100])
+        upper_blue = np.uint8([130,255,255])
+        
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        
+        green = cv2.inRange(hsv, lower_green, upper_green)
+        blue = cv2.inRange(hsv, lower_blue, upper_blue)
+        
+        self.realgreen += green
+        self.realblue += blue
+    
+    def endCalibration(self):
+        self.realgreen[np.where(self.realgreen != 0)] = 255
+        cv2.imwrite('initalgreen.png', self.realgreen)
+        self.realgreen = cv2.imread('initalgreen.png', 0)
+            
+        self.realblue[np.where(self.realblue != 0)] = 255
+        cv2.imwrite('initalblue.png', self.realblue)
+        self.realblue = cv2.imread('initalgreen.png', 0)
+#        print len(np.where(self.realblue == 255))
+        cv2.destroyAllWindows()
         
     def update(self):
         # Capture frame-by-frame
         ret, frame = self.cam.read()
-        
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
         # define range of blue color in HSV
         lower_blue = np.uint8([110, 100, 100])
         upper_blue = np.uint8([130,255,255])
             
-        lower_green = np.uint8([60, 60, 60])
-        upper_green = np.uint8([90, 255, 255])
-        # Threshold the HSV image to get only blue colors
+#        lower_green = np.uint8([60, 60, 60])
+#        upper_green = np.uint8([90, 255, 255])
+
+        lower_green = np.uint8([40, 100, 100])
+        upper_green = np.uint8([70, 255, 255])
+        
         blue = cv2.inRange(hsv, lower_blue, upper_blue)
         green = cv2.inRange(hsv, lower_green, upper_green)
+    
+#        green = green - self.realgreen
+#        blue = blue - self.realblue
         
         moment = cv2.moments(blue)
         
-        moment1 = cv2.moments(green)
+        moment1 = cv2.moments(green) 
         
         
         if moment1['m00'] != 0:
+<<<<<<< HEAD
+            self.green = len(np.where(green == 255)[0])
+            print self.green
+=======
             self.green = len(np.where(green != 0)[0]) 
             #sprint self.green
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -59,10 +103,8 @@ class Camera:
             camHeight = self.cam.get(4)
             self.x = int((1.0*self.cam.get(3)-x)/camWidth*self.screen.get_size()[0])
             self.y = int((1.0*y)/camHeight*self.screen.get_size()[1])
-#            print len(np.where(blue != 0)[0])
-#            print len(blue)
-#            self.blue = len(np.where(blue != 0)[0])
-            self.blue = len(np.where(blue != 0)[0])
+            self.blue = len(np.where(blue == 255)[0])
+            
     
     def endCam(self):
         self.cam.release()
@@ -156,8 +198,14 @@ class Gun:
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
             if self.isEmpty():
+<<<<<<< HEAD
+#                text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
+#                self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
+                pass
+=======
                 text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
                 self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
@@ -498,6 +546,9 @@ class Main:
         self.screen = pygame.display.set_mode((width,height))
         pygame.display.set_caption('Shooter Platform')
         self.clock=pygame.time.Clock()
+        
+        self.doCalibrate = True
+        
         self.shooting = False
         
         self.background = Background(self.screen)
@@ -525,8 +576,17 @@ class Main:
         self.clock.tick(60)
         
         # Clear the screen
-        self.screen.fill([100,200,100])        
+        self.screen.fill([100,200,100])
+     
+        if self.doCalibrate:
+            i = 0
+            while i<100:
+                self.cam.calibrate()
+                i +=1
+            self.cam.endCalibration()
+            self.doCalibrate = False
 
+        
         for event in pygame.event.get():
 
             if event.type==QUIT:
@@ -537,7 +597,13 @@ class Main:
                 if event.key == K_ESCAPE:
                     self.cam.endCam()
                     exit()
+<<<<<<< HEAD
+                    
+                if event.key == K_SPACE:
+                    # self.soundPlayed = True       
+=======
                 if event.key == K_SPACE:  
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
                         break
@@ -558,11 +624,31 @@ class Main:
             if self.hud.health>0:
                 self.background.update()
                 self.enMan.update()
+<<<<<<< HEAD
+
+=======
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 
                 if self.cam.blue <10:
                     self.gun.reloaded()
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
+<<<<<<< HEAD
+    
+#                           
+                if self.cam.green <5:
+                    pos = (self.cam.x,self.cam.y)
+                    if self.gun.isEmpty():
+                        pass
+                    else:
+                        self.gun.ammo -= 1
+                        self.shooting = True
+                        self.enMan.checkHit(pos)
+                        self.track = pygame.mixer.music.load('shot.wav') 
+                        pygame.mixer.music.play()
+
+=======
+>>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
                 pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
@@ -593,6 +679,7 @@ class Main:
         pygame.display.flip()
 
 if __name__ == '__main__':
+  
     game = Main()
     while True:
         game.update()
