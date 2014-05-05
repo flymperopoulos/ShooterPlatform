@@ -2,7 +2,7 @@
 
 import numpy as np 
 import cv2
-
+#
 #cam1 = cv2.VideoCapture(0)
 #realgreen = 0
 #realblue = 0
@@ -58,7 +58,7 @@ while(True):
     upper_blue = np.uint8([130,255,255])
 
     # define range of green color in HSV
-    lower_green = np.uint8([40, 100, 100])
+    lower_green = np.uint8([40, 110, 110])
     upper_green = np.uint8([70, 255, 255])
 
 #   lower_green = np.uint8([60, 60, 60])

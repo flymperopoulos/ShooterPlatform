@@ -87,9 +87,9 @@ class Camera:
         
         moment1 = cv2.moments(green) 
         
-        
-        self.green = len(np.where(green != 0)[0])
-        print self.green
+        if moment1['m00'] != 0:
+            self.green = len(np.where(green != 0)[0])
+            print self.green
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
