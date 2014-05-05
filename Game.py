@@ -471,113 +471,410 @@ class Scaler:
     '''
     def scale(self,yVal,initWidth):
         
-        #
+        # Find scaled width at the second yRange value
         wScaled=(self.xRange2[1]-self.xRange2[0])*initWidth/(self.xRange1[1]-self.xRange1[0])
+        
+        # Find the relative Y coordinate multiple in relation to the second
+        # yRange value
         relY = yVal*1.0/(self.yRange[1]-self.yRange[0])
+        
+        # Find the width at the given y value and return a scaling factor
         newWidth = (wScaled-initWidth)*relY+initWidth
         return newWidth/initWidth
         
+    '''
+    findX
+    
+    Finds the exact x cooridnate given the y position on the road and the
+    relative x position on the road
+        parameters:
+            yVal - y position on road for which x position needs to be found
+            relX - relative x position on road at given y value
+        returns:
+            x position on screen corresponding to given y value and rel. x
+    '''
     def findX(self,yVal,relX):
+        
+        # Find relative y distance as a scalar multiple of 2nd yRange value
         relDist = 1.0*(yVal-self.yRange[0])/(self.yRange[1]-self.yRange[0])
+        
+        # Find road width at given y value
         newRoadWidth = 1.0*((self.xRange2[1]-self.xRange2[0])-(self.xRange1[1]-self.xRange1[0]))*relDist+(self.xRange1[1]-self.xRange1[0])
+        
+        # Return absolute x position, after calculating offset from beginning
+        # of road and x position relative to the beginning of the road
         xValOffset = newRoadWidth*relX
         startX = (self.xRange2[0]-self.xRange1[0])*relDist+self.xRange1[0]
         return startX + xValOffset
-    
+        
+        
+'''
+Wall
+
+Represents a wall that the enemies can hide behind
+'''    
 class Wall:
     
+    '''
+    __init__
+    
+    Initialize the Wall class
+        parameters:
+            screen - pyGame screen
+            pos - bottom center position of the wall
+            width - width of the wall
+            height - height of the wall
+            image - a picture of the wall
+        returns: none
+    '''
     def __init__(self, screen, pos, width, height, image):
         
+        # The pyGame screen
         self.screen = screen
+        
+        # Position, width, and height of wall
         self.pos = pos
         self.height = height
         self.width = width
+        
+        # Load actual image of wall
         self.image = pygame.transform.scale(image, (int(self.width),int(self.height)))
         
+    '''
+    isHit
+    
+    Checks if wall has been hit by a bullet
+    parameters:
+        pos - position of bullet
+    returns:
+        True if wall is hit, and false otherwise
+    '''    
     def isHit(self,pos):
         
+        # Wall is not hit if the x position of pos is outside the wall boundaries
         if pos[0]<self.pos[0]-self.width/2 or pos[0]>self.pos[0]+self.width/2:
             return False
+        
+        # Wall is not hit if the y position of pos is outside the wall boundaries
         elif pos[1]<self.pos[1]-self.height or pos[1]>self.pos[1]:
             return False
+            
+        # Wall is hit if code reaches this far
         else:
             return True
         
+    '''
+    update
+    
+    Display the wall on the screen
+        parameters: none
+        returns: none
+    '''
     def update(self):
+        
+        # Display the image of the wall on the screen and a black outline
         pygame.draw.rect(self.screen,(0,0,0),Rect((int(self.pos[0]-self.width/2.0)-2,int(self.pos[1]-self.height)-2),((int(self.width)+4,int(self.height)+4))))
         self.screen.blit(self.image,(int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)))
-        
-  
+    
+'''
+WallRow
+
+Represents a row of walls on the road
+'''
 class WallRow:
     
+    '''
+    __init__
+    
+    Initializes the WallRow class
+        parameters:
+            screen - the game screen
+            yPos - y position of the row of walls
+            height - height of the walls in the class
+            scalar - the scalar class to help scale walls
+            edged - indicates if walls touch edges of road
+            gapWidth - the sizes of gaps between the walls
+            numGaps - the number of gaps
+            last - indicates if this is the last wall row
+            wallImage - image of the wall
+        returns: none
+    '''
     def __init__(self,screen,yPos,height,scaler,edged, gapWidth, numGaps, last, wallImage):
         
+        # The pyGame screen
         self.screen = screen
+        
+        # y position and height of wall row
         self.yPos = yPos
         self.height=height
+        
+        # Scaler to help scale walls
         self.scaler=scaler
+        
+        # Determines of walls touch egdges
         self.edged = edged
+        
+        # Gap widths and number of gaps
         self.gapWidth = gapWidth
         self.numGaps = numGaps
-        self.last = last
-        self.wallImage = wallImage
         
-        if edged:
-            self.positions = range(numGaps*2)
-        else:
-            self.positions = range((numGaps-1)*2)
+        # Is this the last wall row?
+        self.last = last
+        
+        # image of the wall
+        self.wallImage = wallImage
+
+        # List to store all the walls        
+        self.walls = []        
+        
+        # Lists/variable to store x positions and y position of covers and
+        # exits of the wall row
         self.xCovers = []
         self.xExits = []
         self.yCover = yPos - height*.2
+        
+        # If the wall row is edged, then the number of covers/exits is twice
+        # the number of gaps
+        if edged:
+            self.positions = range(numGaps*2)
+            
+        # Otherwise it is twice one less the number of gaps
+        else:
+            self.positions = range((numGaps-1)*2)
+            
+        # Find the width of the road at the y position of the wall row
         roadWidth = scaler.scale(yPos,scaler.xRange1[1]-scaler.xRange1[0])*(scaler.xRange1[1]-scaler.xRange1[0])
+        
+        # Find the number of walls given if the wall row is edged and
+        # the number of gaps
         walls = 0
         if edged:
             walls = numGaps + 1
         else:
             walls = numGaps - 1
             
+        # Find the width of each wall in the wall row
         wallWidth = (roadWidth - numGaps*gapWidth)/walls
         
-        self.walls = []
+        # Find the x position at the beginning of the road at the given
+        # y value of the road
         xInit = self.scaler.findX(self.yPos,0)
+        
+        # If the wall row is edged
         if edged:
+            
+            # For each wall
             for i in range(numGaps+1):
+                
+                # Find the x position of the wall and add it to the list of walls
                 xPos = i*wallWidth+i*gapWidth+wallWidth/2+xInit
                 self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height, self.wallImage))
-                roadBeginning = self.scaler.findX(yPos,0)
+                
+                # Add the x positions of all the covers and exits of the wall
+                # row, depending on if the wall is on the ends or in the
+                # middle
                 if i==0:
-                    self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
-                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
+                    self.xCovers.append((xPos+wallWidth/4.0-xInit)/roadWidth)
+                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-xInit)/roadWidth)
                 elif i==numGaps:
-                    self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
-                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
+                    self.xCovers.append((xPos-wallWidth/4.0-xInit)/roadWidth)
+                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-xInit)/roadWidth)
                 else:
-                    self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
-                    self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
-                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
-                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
+                    self.xCovers.append((xPos-wallWidth/4.0-xInit)/roadWidth)
+                    self.xCovers.append((xPos+wallWidth/4.0-xInit)/roadWidth)
+                    self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-xInit)/roadWidth)
+                    self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-xInit)/roadWidth)
+                    
+        # But if the wall is not edged
         else:
+            
+            # For each wall
             for i in range(numGaps-1):
-                roadBeginning = self.scaler.findX(yPos,0)
+                
+                # Find the x position of the wall and add it to the list of walls
                 xPos = i*wallWidth+i*gapWidth+wallWidth/2+gapWidth+xInit
                 self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height, self.wallImage))
-                self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
-                self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
-                self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
-                self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-roadBeginning)/roadWidth)
                 
+                # Add the x positions of the covers and exits
+                self.xCovers.append((xPos-wallWidth/4.0-xInit)/roadWidth)
+                self.xCovers.append((xPos+wallWidth/4.0-xInit)/roadWidth)
+                self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-xInit)/roadWidth)
+                self.xExits.append((xPos+wallWidth/2.0+gapWidth/4.0-xInit)/roadWidth)
+                
+    '''
+    isHit
+    
+    Checks to see if any of the walls in the wall row is hit
+    
+    parameters:
+        pos - position of bullet
+    returns:
+        True if any walls are hit, and false otherwise
+    '''
     def isHit(self,pos):
         
+        # Check if any of the walls are hit
         for wall in self.walls:
             if wall.isHit(pos):
                 return True
+                
+        # If none of the walls are hit, return False
         return False
         
+    '''
+    update
+    
+    Display all the walls in the wall row
+    '''
     def update(self):
+        
+        # Display each wall in the wall row
         for wall in self.walls:
             wall.update()
-            
 
+class Enemy:
+    
+    def __init__(self, screen, pos, relPos, level, images, scaler):
+        
+        self.screen=screen
+        self.pos=pos
+        self.relPos = relPos
+        self.level = level
+        self.images = images
+        self.scaler = scaler
+        self.initWidth = 25.0
+        self.initSpeed = 2.0
+        self.status = 'available'
+        self.direction = 'none'
+        self.oldDirection = self.direction
+        self.target = -1
+        self.walkCounter = 0
+        self.wait = 10 
+        self.height = 0
+        self.width = 0
+        self.queue = []
+        self.currentPic = 'front2'
+        self.timer = -1
+        self.wait = .1
+        self.shootingTimer = -1
+        self.hurtUser = False;
+        self.hurtUserProb = .01
+        
+    def updatePosition(self,relPos,level):
+        self.relPos = relPos
+        self.level = level
+        
+    def updateQueue(self,directions):
+        
+        self.queue.extend(directions)
+        
+    def update(self):
+        
+        self.move()
+        image = self.getImage()
+        
+        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
+        self.height = int(scaleFactor*image.get_size()[1])
+        self.width = int(scaleFactor*image.get_size()[0])
+        toDisplay = pygame.transform.scale(image,(self.width,self.height))
+        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
+        
+    def getImage(self):
+        
+        if self.oldDirection!=self.direction:
+            self.timer = time.time()
+            if self.direction == 'forward':
+                self.currentPic = 'front1'
+            elif self.direction == 'left':
+                self.currentPic = 'left1'
+            elif self.direction == 'right':
+                self.currentPic = 'right1'
+            elif self.direction == 'shoot':
+                self.currentPic = 'shoot1'
+            else:
+                self.currentPic = 'front2'
+        elif time.time() - self.timer > self.wait:
+            if self.currentPic == 'front1':
+                self.currentPic = 'front3'
+            elif self.currentPic == 'left1':
+                self.currentPic = 'left3'
+            elif self.currentPic =='right1':
+                self.currentPic = 'right3'
+            elif self.currentPic == 'front3':
+                self.currentPic = 'front1'
+            elif self.currentPic == 'left3':
+                self.currentPic = 'left1'
+            elif self.currentPic =='right3':
+                self.currentPic = 'right1'
+            elif self.currentPic =='shoot1':
+                if random.random() < self.hurtUserProb:
+                    self.hurtUser = True
+                self.currentPic = 'shoot2'
+            elif self.currentPic =='shoot2':
+                self.currentPic = 'shoot1'
+            self.timer = time.time()
+            
+        self.oldDirection = self.direction
+            
+        return self.images[self.currentPic]
+    
+    def move(self):
+        
+        if self.status != 'available':
+            speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
+            if self.direction=='forward':
+                self.pos = (self.pos[0],self.pos[1]+speed)
+                if self.pos[1] > self.target:
+                    self.pos = (self.pos[0],self.target)
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='left':
+                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
+                self.pos = (self.pos[0]-speed/roadWidth,self.pos[1])
+                if self.pos[0] < self.target:
+                    self.pos = (self.target,self.pos[1])
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='right':
+                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
+                self.pos = (self.pos[0]+speed/roadWidth,self.pos[1])
+                if self.pos[0] > self.target:
+                    self.pos = (self.target,self.pos[1])
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='shoot':
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+            elif self.direction=='wait':
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+                
+        if self.status=='available' and len(self.queue)>0:
+            self.status='moving'
+            self.direction=self.queue[0][0]
+            if self.direction == 'shoot' or self.direction == 'wait':
+                self.shootingTimer = time.time()
+            self.target=self.queue[0][1]
+            self.queue.remove(self.queue[0])
+        
+    def isHit(self,pos):
+        minPoint = (self.scaler.findX(self.pos[1],self.pos[0])-self.width/2.0,self.pos[1]-self.height)
+        if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.width):
+            if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
+                return True
+        return False
+
+            
+'''
+EnemyManager
+'''
 class EnemyManager:
     
     def __init__(self,screen,scaler,hud, initWallHeight, initGapWidth):
@@ -747,144 +1044,6 @@ class EnemyManager:
     def makeWait(self, time):
         return [['wait',time]]
                     
-class Enemy:
-    
-    def __init__(self, screen, pos, relPos, level, images, scaler):
-        
-        self.screen=screen
-        self.pos=pos
-        self.relPos = relPos
-        self.level = level
-        self.images = images
-        self.scaler = scaler
-        self.initWidth = 25.0
-        self.initSpeed = 2.0
-        self.status = 'available'
-        self.direction = 'none'
-        self.oldDirection = self.direction
-        self.target = -1
-        self.walkCounter = 0
-        self.wait = 10 
-        self.height = 0
-        self.width = 0
-        self.queue = []
-        self.currentPic = 'front2'
-        self.timer = -1
-        self.wait = .1
-        self.shootingTimer = -1
-        self.hurtUser = False;
-        self.hurtUserProb = .01
-        
-    def updatePosition(self,relPos,level):
-        self.relPos = relPos
-        self.level = level
-        
-    def updateQueue(self,directions):
-        
-        self.queue.extend(directions)
-        
-    def update(self):
-        
-        self.move()
-        image = self.getImage()
-        
-        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
-        self.height = int(scaleFactor*image.get_size()[1])
-        self.width = int(scaleFactor*image.get_size()[0])
-        toDisplay = pygame.transform.scale(image,(self.width,self.height))
-        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
-        
-    def getImage(self):
-        
-        if self.oldDirection!=self.direction:
-            self.timer = time.time()
-            if self.direction == 'forward':
-                self.currentPic = 'front1'
-            elif self.direction == 'left':
-                self.currentPic = 'left1'
-            elif self.direction == 'right':
-                self.currentPic = 'right1'
-            elif self.direction == 'shoot':
-                self.currentPic = 'shoot1'
-            else:
-                self.currentPic = 'front2'
-        elif time.time() - self.timer > self.wait:
-            if self.currentPic == 'front1':
-                self.currentPic = 'front3'
-            elif self.currentPic == 'left1':
-                self.currentPic = 'left3'
-            elif self.currentPic =='right1':
-                self.currentPic = 'right3'
-            elif self.currentPic == 'front3':
-                self.currentPic = 'front1'
-            elif self.currentPic == 'left3':
-                self.currentPic = 'left1'
-            elif self.currentPic =='right3':
-                self.currentPic = 'right1'
-            elif self.currentPic =='shoot1':
-                if random.random() < self.hurtUserProb:
-                    self.hurtUser = True
-                self.currentPic = 'shoot2'
-            elif self.currentPic =='shoot2':
-                self.currentPic = 'shoot1'
-            self.timer = time.time()
-            
-        self.oldDirection = self.direction
-            
-        return self.images[self.currentPic]
-    
-    def move(self):
-        
-        if self.status != 'available':
-            speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
-            if self.direction=='forward':
-                self.pos = (self.pos[0],self.pos[1]+speed)
-                if self.pos[1] > self.target:
-                    self.pos = (self.pos[0],self.target)
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='left':
-                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
-                self.pos = (self.pos[0]-speed/roadWidth,self.pos[1])
-                if self.pos[0] < self.target:
-                    self.pos = (self.target,self.pos[1])
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='right':
-                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
-                self.pos = (self.pos[0]+speed/roadWidth,self.pos[1])
-                if self.pos[0] > self.target:
-                    self.pos = (self.target,self.pos[1])
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='shoot':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='wait':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-                
-        if self.status=='available' and len(self.queue)>0:
-            self.status='moving'
-            self.direction=self.queue[0][0]
-            if self.direction == 'shoot' or self.direction == 'wait':
-                self.shootingTimer = time.time()
-            self.target=self.queue[0][1]
-            self.queue.remove(self.queue[0])
-        
-    def isHit(self,pos):
-        minPoint = (self.scaler.findX(self.pos[1],self.pos[0])-self.width/2.0,self.pos[1]-self.height)
-        if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.width):
-            if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
-                return True
-        return False
         
 class Main:
     
