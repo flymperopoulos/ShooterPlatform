@@ -20,6 +20,7 @@ import cv2
 import time
 
 class Camera:
+    """Class camera takes care of all of the interaction with the webcam. It tracks color and the size of the color"""
     def __init__(self, screen):
         self.cam = cv2.VideoCapture(0)
         self.x=0
@@ -31,22 +32,31 @@ class Camera:
         self.realblue = 0
     
     def calibrate(self):
+        """calibrate captures the extraneous background color"""
+#        read the images from the webcam
         ret, frame = self.cam.read()
 #        
 #        lower_green = np.uint8([60, 60, 60])
 #        upper_green = np.uint8([90, 255, 255])
 
+#        hsv range for color green
         lower_green = np.uint8([40, 100, 100])
         upper_green = np.uint8([70, 255, 255])
         
+#        hsv range for color blue
         lower_blue = np.uint8([110, 100, 100])
         upper_blue = np.uint8([130,255,255])
         
+#        change the BGR frame toe HSV (hue saturation value)       
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
         
+#        green frame only shows the color green between the range give in lower_green and upper_green
         green = cv2.inRange(hsv, lower_green, upper_green)
+
+#        sasme with blue        
         blue = cv2.inRange(hsv, lower_blue, upper_blue)
         
+                
         self.realgreen += green
         self.realblue += blue
     
