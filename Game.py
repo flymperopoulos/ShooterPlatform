@@ -87,9 +87,9 @@ class Camera:
         
         moment1 = cv2.moments(green) 
         
-        if moment1['m00'] != 0:
-            self.green = len(np.where(green != 0)[0])
-            print self.green
+#        if moment1['m00'] != 0:
+        self.green = len(np.where(green != 0)[0])
+#        print self.green
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -161,7 +161,7 @@ class Background:
         
         self.screen.blit(self.bgImage,(0,0))
         
-class Gun:
+class Gun(object):
     
     def __init__(self,screen,cam, ammo):
         self.x = 0
@@ -175,6 +175,8 @@ class Gun:
         self.bullet = pygame.image.load('bullet.png').convert_alpha()
         self.bulletShow = True
         self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
+        self.hitRadius = self.screen.get_size()[1]/100
+        self.numShot =1
         
     def reloaded(self):
         self.ammo = self.rAmmo
@@ -199,7 +201,15 @@ class Gun:
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
-                 
+
+class Shotgun(Gun):
+    def __init__(self,screen,cam, ammo):
+        super(Shotgun, self).__init__(screen, cam, ammo)
+        self.hitRadius = self.screen.get_size()[1]/20
+        self.numShot = 1000
+        self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
+        
+
 class Scaler:
     
     def __init__(self, yRange, xRange1, xRange2):
@@ -548,7 +558,8 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-        self.gun = Gun(self.screen,self.cam, 100)
+#        self.gun = Gun(self.screen,self.cam, 100)
+        self.gun = Shotgun(self.screen,self.cam, 100)
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -596,6 +607,11 @@ class Main:
                         self.gun.ammo -= 1
                         self.shooting = True
                         self.enMan.checkHit(pos)
+                        i = 0                        
+                        while i < self.gun.numShot:
+                            newpos = (pos[0]+self.gun.hitRadius/(random.random() +1), pos[1] + self.gun.hitRadius/(random.random()+1))
+                            self.enMan.checkHit(newpos)
+                            i+=1
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
@@ -615,14 +631,20 @@ class Main:
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
 
-                if self.cam.green ==0:
+                if self.cam.green == 0:
                     pos = (self.cam.x,self.cam.y)
+                    
                     if self.gun.isEmpty():
                         pass
                     else:
                         self.gun.ammo -= 1
                         self.shooting = True
                         self.enMan.checkHit(pos)
+                        i = 0                        
+                        while i < self.gun.numShot:
+                            newpos = (pos[0]+self.gun.hitRadius/(random.random() +1), pos[1] + self.gun.hitRadius/(random.random()+1))
+                            self.enMan.checkHit(newpos)
+                            i+=1
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
