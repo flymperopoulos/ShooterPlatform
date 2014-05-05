@@ -88,14 +88,8 @@ class Camera:
         moment1 = cv2.moments(green) 
         
         
-        if moment1['m00'] != 0:
-<<<<<<< HEAD
-            self.green = len(np.where(green == 255)[0])
-            print self.green
-=======
-            self.green = len(np.where(green != 0)[0]) 
-            #sprint self.green
->>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
+        self.green = len(np.where(green != 0)[0])
+        print self.green
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -198,14 +192,10 @@ class Gun:
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
             if self.isEmpty():
-<<<<<<< HEAD
-#                text3 = font.render("Gun is Empty", 1,(240, 10, 10))        
-#                self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
-                pass
-=======
+
                 text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
                 self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
->>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
+
         self.x = self.cam.x
         self.y = self.cam.y
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
@@ -562,7 +552,7 @@ class Main:
                 
         self.cam = Camera(self.screen)
 
-        self.gun = Gun(self.screen,self.cam, 7)
+        self.gun = Gun(self.screen,self.cam, 100)
 
         # self.menu = Menu(self.screen,'Enter the Game')
 
@@ -601,13 +591,8 @@ class Main:
                 if event.key == K_ESCAPE:
                     self.cam.endCam()
                     exit()
-<<<<<<< HEAD
-                    
-                if event.key == K_SPACE:
-                    # self.soundPlayed = True       
-=======
                 if event.key == K_SPACE:  
->>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
+
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
                         break
@@ -629,19 +614,13 @@ class Main:
             if self.hud.health>0:
                 self.background.update()
                 self.enMan.update()
-<<<<<<< HEAD
-
-=======
->>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 
                 if self.cam.blue <10:
                     self.gun.reloaded()
                     self.track = pygame.mixer.music.load('reloadFinal.wav')        
                     pygame.mixer.music.play()
-<<<<<<< HEAD
-    
-#                           
-                if self.cam.green <5:
+
+                if self.cam.green ==0:
                     pos = (self.cam.x,self.cam.y)
                     if self.gun.isEmpty():
                         pass
@@ -652,8 +631,6 @@ class Main:
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
 
-=======
->>>>>>> 5366d7ff26a6d036f1a0296064226c1d894a5b9d
                 size = self.screen.get_size()
                 pygame.draw.line(self.screen,(100,100,200),(330/900.0*size[0],1/900.0*size[1]),(570/900.0*size[0],1/900.0*size[1]))
                 pygame.draw.line(self.screen,(100,100,200),(28/900.0*size[0],600/900.0*size[1]),(866/900.0*size[0],600/900.0*size[1]))
