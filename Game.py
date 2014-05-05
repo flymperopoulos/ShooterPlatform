@@ -6,30 +6,64 @@ Created on Wed Apr 16 21:29:13 2014
 Sidd Singal
 James Jang
 Filippos Lymperopoulos
+
+Shooter Platform
+
+You are under attack by the military, and you must shoot them to defend
+youself. The enemies manuever around walls and try to shoot back at you. 
+Survive as long as you can. This game uses a physical replica gun to shoot
+with in the game using openCV libraries.
 """
 
+# Import all needed libraries
 import pygame
 from pygame.locals import *
-import math
 import numpy as np
 from os import listdir
 from os.path import isfile, join
 import random
-import numpy as np
 import cv2
 import time
 
+'''
+Camera
+
+This class handles camera image analysis in order to track the physical
+gun being seen by the webcam
+'''
 class Camera:
+    
+    '''
+    __init__
+    
+    Initialize the Camera class
+        parameters:
+            screen - the screen of the game
+        returns: none
+    '''
     def __init__(self, screen):
+        
+        # The pyGame screen
+        self.screen = screen
+        
+        # Initialize the camera port
         self.cam = cv2.VideoCapture(0)
+        
+        # Initialize position of interest (where the gun is pointing)
         self.x=0
         self.y=0
-        self.screen = screen
+        
+        # Camera Blue and green values 
         self.blue = 0
         self.green = 0
         self.realgreen = 0
         self.realblue = 0
     
+    '''
+    calibrate
+    
+    Calibrate the camera to b
+    '''
     def calibrate(self):
         ret, frame = self.cam.read()
 #        
@@ -69,26 +103,17 @@ class Camera:
         # define range of blue color in HSV
         lower_blue = np.uint8([110, 100, 100])
         upper_blue = np.uint8([130,255,255])
-            
-#        lower_green = np.uint8([60, 60, 60])
-#        upper_green = np.uint8([90, 255, 255])
+
 
         lower_green = np.uint8([40, 100, 100])
         upper_green = np.uint8([70, 255, 255])
         
         blue = cv2.inRange(hsv, lower_blue, upper_blue)
         green = cv2.inRange(hsv, lower_green, upper_green)
-    
-#        green = green - self.realgreen
-#        blue = blue - self.realblue
         
         moment = cv2.moments(blue)
-        
-        moment1 = cv2.moments(green) 
-        
-#        if moment1['m00'] != 0:
+
         self.green = len(np.where(green != 0)[0])
-#        print self.green
 
         if moment['m00'] != 0:
             x,y = int(moment['m10']/moment['m00']), int(moment['m01']/moment['m00'])
@@ -103,128 +128,350 @@ class Camera:
         self.cam.release()
         cv2.destroyAllWindows()
 
-        
+'''
+HUD
+
+Represents the heads up dispay of the game, including health and score
+'''
 class HUD:
     
+    '''
+    __init__
+    
+    Initialize the HUD class
+        parameters: 
+            screen - the screen of the game
+        returns: none
+    '''
     def __init__(self,screen):
+        
+        # The pyGame screen
+        self.screen = screen        
+        
+        # Initialize initial score and maximum health, and current health
         self.score = 0
         self.maxHealth = 100
         self.health = self.maxHealth
-        self.screen = screen
+        
+        # Initialize the font for any printed text
         self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
 
+    '''
+    scoreUp
+    
+    Increase the score by 1
+        parameters: none
+        returns: none
+    '''
     def scoreUp(self):
+        
+        # Increase the score by 1
         self.score+=1
-        
+    
+    '''
+    hurt
+    
+    The user is hurt when the enemy is able to make it all the way down
+    to the bottom of the screen
+        parameters: none
+        returns: none
+    '''        
     def hurt(self):
+        
+        # Decrease the health by 10
         self.health-=10
-        hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
-        hurtEnem.set_alpha(100)                
-        hurtEnem.fill((239,66,66))           
-        self.screen.blit(hurtEnem, (0,0)) 
-
-
-    def shot(self):
-        self.health-=1
+        
+        # Display a red transparent rectangle signifying that 
+        # the user is hurt
         hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
         hurtEnem.set_alpha(100)                
         hurtEnem.fill((239,66,66))           
         self.screen.blit(hurtEnem, (0,0)) 
         
+    '''
+    shot
+    
+    The user is hurt when the enemy shoots successfully at the user
+        parameters: none
+        returns: none
+    '''
+    def shot(self):
+        
+        # Decrease the health by 1
+        self.health-=1
+        
+        # Display a red transparent rectangle signifying that 
+        # the user is hurt
+        hurtEnem = pygame.Surface((self.screen.get_size()[0],self.screen.get_size()[1]))  
+        hurtEnem.set_alpha(100)                
+        hurtEnem.fill((239,66,66))           
+        self.screen.blit(hurtEnem, (0,0)) 
+        
+    '''
+    update
+    
+    Update all the figures on the screen
+        parameters: none
+        returns: none
+    '''
     def update(self):
+        
+        # Display the health bar on the screen
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/25), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/70)))
         pygame.draw.rect(self.screen, (103,171,216), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/4.5,self.screen.get_size()[1]/24), ((self.screen.get_size()[0]/5)*1.0*self.health/self.maxHealth,self.screen.get_size()[1]/90)))        
+        
+        # Display the numerical health and score
         text1 = self.font.render("Score: " + str(self.score), 1, (10, 10, 10))
         text2 = self.font.render("Health: " + str(100/self.maxHealth*self.health) + '%', 1, (10, 10, 10))
-        text3 = self.font.render("Gun is Empty", 1,(10, 10, 10))        
         self.screen.blit(text1,(self.screen.get_size()[0]/12,self.screen.get_size()[1]/13))
         self.screen.blit(text2,(self.screen.get_size()[0]-self.screen.get_size()[0]/5.1,self.screen.get_size()[1]/17))
-#       if self.gun.isEmpty():        
-#           self.screen.blit(text,(100,100))
         
+    '''
+    endGame
+    
+    Displays the score at the end of the game
+        parameters: none
+        returns: none
+    '''
     def endGame(self):
+        
+        # Set the text for the score to display
         text = self.font.render("Score: " + str(self.score), 1, (10, 10, 10))
+        
+        # Center and display the text        
         textpos = text.get_rect()
         textpos.centerx = self.screen.get_rect().centerx
         textpos.centery = self.screen.get_rect().centery
         self.screen.blit(text, textpos)
-
-    def pauseGame(self):
-        text = self.font.render("Continue",1, (10, 10, 10))
-        pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
-        # image = pygame.Surface([640,480], pygame.SRCALPHA, 32)
-        # image = image.convert_alpha()
-        self.screen.blit(text,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
-        # self.screen.blit(image,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
         
+    '''
+    pauseGame
+    
+    A screen for when the game is paused
+        parameters: none
+        returns: none
+    '''
+    def pauseGame(self):
+        
+        # Set text indicating where the user should click to exit pause
+        text = self.font.render("Continue",1, (10, 10, 10))
+        
+        # Display the text on the screen
+        pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
+        self.screen.blit(text,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
+       
+'''
+Background
+
+Represents the background for the game
+'''
 class Background:
     
+    '''
+    __init__
+    
+    Initialize the Background class
+        parameters: none
+        returns: none
+    '''
     def __init__(self, screen):
         
+        # The pyGame screen
         self.screen = screen
+        
+        # Load the background image from file
         self.bgImage = pygame.transform.scale(pygame.image.load('landscape.png'),self.screen.get_size())
         
+    '''
+    update
+    
+    Display the background on the screen
+        parameters: none
+        returns: none
+    '''
     def update(self):
         
+        # Add the background image to the screen
         self.screen.blit(self.bgImage,(0,0))
         
+'''
+Gun
+
+Represents the gun and its current properties, and displays the crosshair
+on the screen
+'''
 class Gun(object):
+   
+    '''
+    __init__
     
+    Initialize the Gun class
+        parameters:
+            screen - the screen of the game
+            cam - the Camera input, to get its x and y values
+            ammo - the maximum amount of ammo in the gun
+        returns: none
+    '''
     def __init__(self,screen,cam, ammo):
+        
+        # The pyGame screen
+        self.screen = screen
+
+        # The Camera of the game        
+        self.cam = cam
+        
+        # Initiailize position of crosshair
         self.x = 0
         self.y = 0 
-        self.cam = cam
-        self.screen = screen
+        
+        # Load the image/size of the crosshair and bullet into the game
         self.crosshair = pygame.image.load('target.png')
+        self.bullet = pygame.image.load('bullet.png').convert_alpha()
         self.gunSize = self.crosshair.get_size()
+        
+        # Initiailze the ammo and ammo to reload to 
         self.ammo = ammo
         self.rAmmo = ammo
-        self.bullet = pygame.image.load('bullet.png').convert_alpha()
+        
+        # The bullets should only be shown when the game is being played
         self.bulletShow = True
+        
+        # Set the font of the text
         self.font = pygame.font.SysFont("Comic Sans MS", self.screen.get_size()[1]/30)
+        
+        # Set the hit radius of the gun and the number of
+        # bullets the gun shoots        
         self.hitRadius = self.screen.get_size()[1]/100
         self.numShot =1
         
+        
+    '''
+    reloaded
+    
+    Reloads the gun
+        parameters: none
+        returns: none
+    '''
     def reloaded(self):
+        
+        # Reset the ammo to the reload amount
         self.ammo = self.rAmmo
 
+    '''
+    isEmpty
+    
+    Checks if the gun is out of ammo
+        parameters: none
+        returns: True or False depending on if ammo has run out
+    '''
     def isEmpty(self):
+        
+        # If the amount of ammo is 0, then return True, else return False
         if self.ammo == 0:
             return True
         return False
         
+    '''
+    update
+    
+    Update the Gun class, including crosshair position and bullets
+        parameters: none
+        returns: none
+    '''
     def update(self):
-        #self.x = pygame.mouse.get_pos()[0]
-        #self.y = pygame.mouse.get_pos()[1]
+       
+        # If the game is being played, then show the bullets in the corner
         if self.bulletShow:
+            
+            # Show a bullet for every ammo the user's gun has
             for i in range(1,self.ammo+1):
                 toShow = pygame.transform.scale(self.bullet, (int(0.3*(self.bullet.get_size()[0])), int(0.3*(self.bullet.get_size()[1]))))
                 self.screen.blit(toShow,(self.screen.get_size()[0]/30*i,self.screen.get_size()[1]/35))
+            
+            # If there are no more bullets, indicate that the gun is empty
             if self.isEmpty():
-
+                
+                # Display the 'Gun is Empty' text where the bullets should be
                 text3 = self.font.render("Gun is Empty", 1,(240, 10, 10))        
                 self.screen.blit(text3,(self.screen.blit(text3,(self.screen.get_size()[0]/16,self.screen.get_size()[1]/25))))
 
+        # Set the crosshair position to the position indicated by the camera
         self.x = self.cam.x
         self.y = self.cam.y
+        
+        # Display the crosshair on the screen
         self.screen.blit(self.crosshair,(self.x-self.gunSize[0]/2,self.y-self.gunSize[1]/2))       
 
+'''
+Shotgun
+
+Shotgun that extends the Gun class, with different properties as the normal
+Gun class
+'''
 class Shotgun(Gun):
+    
+    '''
+    __init__
+    
+    Initialize the Shotgun class
+        parameters:
+            screen - the screen of the game
+            cam - the Camera input, to get its x and y values
+            ammo - the maximum amount of ammo in the gun
+        returns: none
+    '''
     def __init__(self,screen,cam, ammo):
+        
+        # Call init of the Gun superclass
         super(Shotgun, self).__init__(screen, cam, ammo)
+        
+        # Modify the hit radius, number of shots, and crosshair size
         self.hitRadius = self.screen.get_size()[1]/20
         self.numShot = 25
         self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
         
+'''
+Scalar
+
+It is used to scale different objects to different sizes depending on
+where the object is down the road. This helps make a 3-D effect in the game.
+'''
 class Scaler:
     
+    '''
+    __init__
+    
+    Initialize the Scalar class
+        parameters:
+            yRange - the values of two sample y values of the road
+            xRange1 - the values of the road beginning and ending x value
+                      corresponding to the first yRange value
+            xRange2 - the values of the road beginning and ending x value
+                      corresponding to the second yRange value
+        returns: none
+    '''
     def __init__(self, yRange, xRange1, xRange2):
         
+        # Initializes the yRange, xRange1, and xRange2
         self.yRange = yRange
         self.xRange1 = xRange1
         self.xRange2 = xRange2
         
+    '''
+    scale
+    
+    Finds the scaling factor for a width of an object at the y=1 position
+    of the road for a given y position on the road
+        parameters:
+            yVal - the y value corresponding to the road position to which
+                   the width should be scaled to
+            initWidth - the width of the object at y=1 of the road
+        returns:
+            The scaling factor of the object
+    '''
     def scale(self,yVal,initWidth):
+        
+        #
         wScaled=(self.xRange2[1]-self.xRange2[0])*initWidth/(self.xRange1[1]-self.xRange1[0])
         relY = yVal*1.0/(self.yRange[1]-self.yRange[0])
         newWidth = (wScaled-initWidth)*relY+initWidth
@@ -239,12 +486,13 @@ class Scaler:
     
 class Wall:
     
-    def __init__(self, screen, pos, width, height):
+    def __init__(self, screen, pos, width, height, image):
         
         self.screen = screen
         self.pos = pos
         self.height = height
         self.width = width
+        self.image = pygame.transform.scale(image, (int(self.width),int(self.height)))
         
     def isHit(self,pos):
         
@@ -256,12 +504,13 @@ class Wall:
             return True
         
     def update(self):
-        pygame.draw.rect(self.screen,(100,100,100),Rect((int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)),((int(self.width),int(self.height)))))
+        pygame.draw.rect(self.screen,(0,0,0),Rect((int(self.pos[0]-self.width/2.0)-2,int(self.pos[1]-self.height)-2),((int(self.width)+4,int(self.height)+4))))
+        self.screen.blit(self.image,(int(self.pos[0]-self.width/2.0),int(self.pos[1]-self.height)))
         
   
 class WallRow:
     
-    def __init__(self,screen,yPos,height,scaler,edged, gapWidth, numGaps, last):
+    def __init__(self,screen,yPos,height,scaler,edged, gapWidth, numGaps, last, wallImage):
         
         self.screen = screen
         self.yPos = yPos
@@ -271,7 +520,7 @@ class WallRow:
         self.gapWidth = gapWidth
         self.numGaps = numGaps
         self.last = last
-        
+        self.wallImage = wallImage
         
         if edged:
             self.positions = range(numGaps*2)
@@ -294,7 +543,7 @@ class WallRow:
         if edged:
             for i in range(numGaps+1):
                 xPos = i*wallWidth+i*gapWidth+wallWidth/2+xInit
-                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height))
+                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height, self.wallImage))
                 roadBeginning = self.scaler.findX(yPos,0)
                 if i==0:
                     self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
@@ -311,7 +560,7 @@ class WallRow:
             for i in range(numGaps-1):
                 roadBeginning = self.scaler.findX(yPos,0)
                 xPos = i*wallWidth+i*gapWidth+wallWidth/2+gapWidth+xInit
-                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height))
+                self.walls.append(Wall(self.screen,(xPos,self.yPos),wallWidth, self.height, self.wallImage))
                 self.xCovers.append((xPos-wallWidth/4.0-roadBeginning)/roadWidth)
                 self.xCovers.append((xPos+wallWidth/4.0-roadBeginning)/roadWidth)
                 self.xExits.append((xPos-wallWidth/2.0-gapWidth/4.0-roadBeginning)/roadWidth)
@@ -341,6 +590,7 @@ class EnemyManager:
         self.scaler = scaler
         self.initWallHeight = initWallHeight
         self.initGapWidth = initGapWidth
+        self.wallImage = pygame.image.load('wall.png')
 
         enemyFiles = [ f for f in listdir('SoldierSprite/') if isfile(join('SoldierSprite/',f)) ]
         for f in enemyFiles:
@@ -374,7 +624,7 @@ class EnemyManager:
             yPos = (yTemp*yRange+minRelY)*self.screen.get_size()[1]
             gapWidth = self.scaler.scale(yPos,self.initGapWidth)*self.initGapWidth
             height = self.scaler.scale(yPos,self.initWallHeight)*self.initWallHeight
-            self.wallRows.append(WallRow(self.screen,yPos,height,self.scaler,edged,gapWidth,gaps-gapTemp,False))
+            self.wallRows.append(WallRow(self.screen,yPos,height,self.scaler,edged,gapWidth,gaps-gapTemp,False,self.wallImage))
             edged = not edged
             gapTemp = 1-gapTemp
             
