@@ -1610,10 +1610,11 @@ class Main:
         self.cam.update()
         self.gun.update()
     
-        # upgrade the gun as the score goes up to shotgun and bomb       
+        # upgrade the gun as the score goes up to shotgun    
         if self.hud.score > 3:
             self.gun = self.gunChoice[1]
-            
+
+        # upgrade gun option after 5 kills to a bomb
         if 4 <self.hud.score <6:
             self.gun = self.gunChoice2[1]
 
