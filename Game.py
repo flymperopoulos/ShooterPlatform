@@ -2,18 +2,18 @@
 """
 Created on Wed Apr 16 21:29:13 2014
 
-@authors: 
-
+@author: 
 Sidd Singal
 James Jang
 Filippos Lymperopoulos
 
-Shooter Platform - Software Design Final Project, Spring 2014, Franklin W. Olin College of Engineering
+Shooter Platform
 
 You are under attack by the military, and you must shoot them to defend
 youself. The enemies manuever around walls and try to shoot back at you. 
 Survive as long as you can. This game uses a physical replica gun to shoot
-with in the game using OpenCV libraries.
+with in the game using openCV libraries.
+
 """
 
 # Import all needed libraries
@@ -74,9 +74,6 @@ class Camera:
         """calibrate captures the extraneous background color"""
         # Capture frame-by-frame
         ret, frame = self.cam.read()
-        
-#        lower_green = np.uint8([60, 60, 60])
-#        upper_green = np.uint8([90, 255, 255])
 
         # define range of blue color in HSV
         lower_green = np.uint8([40, 100, 100])
@@ -96,6 +93,7 @@ class Camera:
         # add up the all of the background for each color
         self.realgreen += green
         self.realblue += blue
+        
     '''
     endCalibration
     
@@ -111,6 +109,7 @@ class Camera:
         cv2.imwrite('initalblue.png', self.realblue)
         self.realblue = cv2.imread('initalgreen.png', 0)
         cv2.destroyAllWindows()
+        
     '''
     update
     
@@ -118,7 +117,6 @@ class Camera:
         parameters: none
         returns: none
     '''    
-    
     def update(self):
         # Capture frame-by-frame
         ret, frame = self.cam.read()
@@ -159,6 +157,8 @@ class Camera:
     endCam
     
     Turns off the camera
+        parameters: none
+        returns: none
     '''
     def endCam(self):
         self.cam.release()
@@ -465,7 +465,30 @@ class Shotgun(Gun):
         self.hitRadius = self.screen.get_size()[1]/20
         self.numShot = 25
         self.crosshair = pygame.transform.scale2x(pygame.image.load('target.png'))
+
+class Bomb(Gun):
+    '''
+    __init__
+    
+    Initialize the Bomb class
+        parameters:
+            screen - the screen of the game
+            cam - the Camera input, to get its x and y values
+            ammo - the maximum amount of ammo in the gun
+        returns: none
+
+    As with the Shotgun class, the Bomb class inherits from the Gun class. 
+    '''
+    def __init__(self,screen,cam, ammo):
         
+        # Call init of the Gun superclass
+        super(Bomb, self).__init__(screen, cam, ammo)
+        
+        # Modify the hit radius, number of shots, and crosshair size
+        self.hitRadius = self.screen.get_size()[1]/20
+        self.numShot = 25
+        self.crosshair = pygame.transform.scale2x(pygame.image.load('bomb1.png'))
+     
 '''
 Scalar
 
@@ -768,57 +791,125 @@ class WallRow:
         for wall in self.walls:
             wall.update()
 
+'''
+Enemy
+
+Represents all the enemies in the game
+'''
 class Enemy:
     
+    '''
+    __init__
+    
+    Initializes the Enemy class
+        parameters:
+            screen - the game screen
+            pos - the position of the enemy
+            relPos - relative position of enemy in relation to wallRow 
+                     cover index
+            level - the level wallRow the enemy is at
+            images - sprites for the enemies
+            scalar - to help scale the enemy sizes
+        returns: none
+    '''
     def __init__(self, screen, pos, relPos, level, images, scaler):
         
+        # The pyGame screen
         self.screen=screen
+
+        # The initial position of the enemy. The y position of the enemy is 
+        # stored as the pixel position on the screen, and the x position is 
+        # stored as a value from [0,1], depending on how far along the enemy
+        # is on the road
         self.pos=pos
+        
+        # Position of enemy in terms of cover index and wallRow index
         self.relPos = relPos
         self.level = level
+        
+        # Images to visually represent enemies
         self.images = images
+        
+        # Scaler to help scale the enemy sizes on the screen
         self.scaler = scaler
+        
+        # Initial width and speed of enemies
         self.initWidth = 25.0
         self.initSpeed = 2.0
+        
+        # Store the height and width of enemy so other classes can access it
+        self.height = 0
+        self.width = 0
+
+        # Resetting the directions given to the enemy, and making him
+        # available for instructions. This includes a queue of instructions,
+        # current status of enemy, its direction, and its target
+        self.queue = []
         self.status = 'available'
         self.direction = 'none'
         self.oldDirection = self.direction
         self.target = -1
-        self.walkCounter = 0
-        self.wait = 10 
-        self.height = 0
-        self.width = 0
-        self.queue = []
+        
+        # Specifically to limit time enemy shoots for
+        self.shootingTimer = -1
+        
+        # Variables to control changing of enemy pictures so they are
+        # animated. Timer will store current time of program, wait stores
+        # time between picture changes
         self.currentPic = 'front2'
         self.timer = -1
         self.wait = .1
-        self.shootingTimer = -1
+        
+        # To handle enemies succesfully shooting at user
         self.hurtUser = False;
         self.hurtUserProb = .01
         
+    '''
+    updatePosition
+    
+    Update the wallRow cover index and wallRow level index
+        parameters:
+            relPos - new wallRow cover index
+            level - new wallRow level index
+        returns: none
+    '''    
     def updatePosition(self,relPos,level):
+        
+        # Set new relPos and level        
         self.relPos = relPos
         self.level = level
         
+    '''
+    updateQueue
+    
+    Allows other classes to update the queue of the enemy so it knows what
+    to do
+        parameters:
+            directions - list of instructions for enemy
+        returns: none
+    '''
     def updateQueue(self,directions):
         
+        # Add the given directions to the enemy's queue
         self.queue.extend(directions)
         
-    def update(self):
-        
-        self.move()
-        image = self.getImage()
-        
-        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
-        self.height = int(scaleFactor*image.get_size()[1])
-        self.width = int(scaleFactor*image.get_size()[0])
-        toDisplay = pygame.transform.scale(image,(self.width,self.height))
-        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
-        
+    '''
+    getImage
+    
+    Finds the correct image of the enemy to display on the screen
+        parameters: none
+        returns:
+            An image representing the enemy's state to display on the screen
+    '''
     def getImage(self):
         
+        # If the direction has changed
         if self.oldDirection!=self.direction:
+            
+            # Reset the timer
             self.timer = time.time()
+            
+            # Set the default picture based on the new direction of the enemy
             if self.direction == 'forward':
                 self.currentPic = 'front1'
             elif self.direction == 'left':
@@ -827,89 +918,206 @@ class Enemy:
                 self.currentPic = 'right1'
             elif self.direction == 'shoot':
                 self.currentPic = 'shoot1'
+            
+            # If the enemy is not given a direction, then default to forward
+            # facing image
             else:
                 self.currentPic = 'front2'
+                
+        # If the direction has stayed the same, but too much time has passed
+        # on a single image being displayed on the screen
         elif time.time() - self.timer > self.wait:
+            
+            # Switch between walking forward images
             if self.currentPic == 'front1':
                 self.currentPic = 'front3'
-            elif self.currentPic == 'left1':
-                self.currentPic = 'left3'
-            elif self.currentPic =='right1':
-                self.currentPic = 'right3'
             elif self.currentPic == 'front3':
                 self.currentPic = 'front1'
+                
+            # Switch between walking left images
+            elif self.currentPic == 'left1':
+                self.currentPic = 'left3'
             elif self.currentPic == 'left3':
                 self.currentPic = 'left1'
+                
+            # Switch between walking right images
+            elif self.currentPic =='right1':
+                self.currentPic = 'right3'
             elif self.currentPic =='right3':
                 self.currentPic = 'right1'
+                
+            # Switch between shooting images
             elif self.currentPic =='shoot1':
+                
+                # Randomly determine if enemy has succesfully shot user
                 if random.random() < self.hurtUserProb:
                     self.hurtUser = True
                 self.currentPic = 'shoot2'
             elif self.currentPic =='shoot2':
                 self.currentPic = 'shoot1'
+                
+            # Reset the timer
             self.timer = time.time()
             
+        # Set oldDirection variable to compare for next iteration
         self.oldDirection = self.direction
-            
+        
+        # Return appropriate image
         return self.images[self.currentPic]
     
+    '''
+    move
+    
+    Moves the enemy depending on the instructions it has in its queue
+        parameters: none
+        returns: none
+    '''
     def move(self):
         
+        # If the enemy is not avaiable for new instructions
         if self.status != 'available':
+            
+            # Find the speed of the enemy based on its y position
             speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
+            
+            # If the enemy's current direction is forward
             if self.direction=='forward':
+                
+                # Update the position of the enemy so he walks forward
                 self.pos = (self.pos[0],self.pos[1]+speed)
+                
+                # If the enemy has reached its target, reset his status and 
+                # make him available for new instructions
                 if self.pos[1] > self.target:
                     self.pos = (self.pos[0],self.target)
                     self.status='available'
                     self.direction='none'
                     self.target=-1
+            
+            # If the enemy's current direction is left
             elif self.direction=='left':
+                
+                # Find the width of the road so that speed can properly be
+                # scaled. Then update the enemy position to make him walk left
                 roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
                 self.pos = (self.pos[0]-speed/roadWidth,self.pos[1])
+                
+                # If the enemy has reached its target, reset his status and 
+                # make him available for new instructions
                 if self.pos[0] < self.target:
                     self.pos = (self.target,self.pos[1])
                     self.status='available'
                     self.direction='none'
                     self.target=-1
+                    
+            # If the enemy's current direction is right
             elif self.direction=='right':
+                
+                # Find the width of the road so that speed can properly be
+                # scaled. Then update the enemy position to make him walk right
                 roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
                 self.pos = (self.pos[0]+speed/roadWidth,self.pos[1])
+                
+                # If the enemy has reached its target, reset his status and 
+                # make him available for new instructions
                 if self.pos[0] > self.target:
                     self.pos = (self.target,self.pos[1])
                     self.status='available'
                     self.direction='none'
                     self.target=-1
+                    
+            # If the enemy is instructed to shoot
             elif self.direction=='shoot':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='wait':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
                 
+                # Reset status if enemy has been shooting for long enough
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+                    
+            # If enemy is instructed to wait
+            elif self.direction=='wait':
+                
+                # Reset status if enemy has been waiting for long enough
+                if time.time() - self.shootingTimer > self.target:
+                    self.status='available'
+                    self.direction='none'
+                    self.target=-1
+        
+        # If the enemy is avaialble for more instructions, and there are
+        # instructions still in the queue
         if self.status=='available' and len(self.queue)>0:
+            
+            # Set the status of the enemy to not available (or moving)
             self.status='moving'
+            
+            # Set the new direction of the enemy
             self.direction=self.queue[0][0]
+            
+            # If the enemy has to shoot or wait, then start a timer
             if self.direction == 'shoot' or self.direction == 'wait':
                 self.shootingTimer = time.time()
+                
+            # Store the target corresponding to the direction:
+                # If direction is forward, then target is y position
+                # If direction is left/right, then target is relative x position
             self.target=self.queue[0][1]
+            
+            # Remove instruction from the queue
             self.queue.remove(self.queue[0])
         
+    '''
+    isHit
+    
+    Determines if enemy has been hit by bullet
+        parameters:
+            pos - position of the bullet
+        returns:
+            True if enemy has been hit by bullet and False otherwise
+    '''
     def isHit(self,pos):
+        
+        # Find the top left corner of the enemy
         minPoint = (self.scaler.findX(self.pos[1],self.pos[0])-self.width/2.0,self.pos[1]-self.height)
+        
+        # If the x position and y position lie within the boundaries of the
+        # enemy then return True
         if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.width):
             if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
                 return True
+                
+        # Otherwise return False
         return False
+        
+    '''
+    update
+    
+    Updates the position and display of the enemy
+        parameters: none
+        returns: none
+    '''
+    def update(self):
+        
+        # Change the position of the enemy
+        self.move()
+        
+        # Find the right picture to use for the enemy
+        image = self.getImage()
+        
+        # Resize the image depending on his y position
+        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
+        self.height = int(scaleFactor*image.get_size()[1])
+        self.width = int(scaleFactor*image.get_size()[0])
+        toDisplay = pygame.transform.scale(image,(self.width,self.height))
+        
+        # Display the enemy on the screen
+        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
 
             
 '''
 EnemyManager
+
+This class handles all of the enemies and walls of the game
 '''
 class EnemyManager:
     
@@ -918,335 +1126,353 @@ class EnemyManager:
     
     Initialize the EnemyManager class
         parameters: 
-            
+            screen - the screen of the game
+            scaler - to help scale image sizes
+            hud - heads up display of the game
+            initWallHeight - the initial height of the wall
+            initGapWidth - the initial width of the gaps between the walls
         returns: none
     '''    
     def __init__(self,screen,scaler,hud, initWallHeight, initGapWidth):
+        
+        # The pyGame screen
         self.screen = screen
-        self.hud = hud
-        self.enemies = []
-        self.wallRows = []
-        self.newEnemyProb = .01
-        self.enemyImages = {}
+        
+        # Scaler for the class
         self.scaler = scaler
+        
+        # The heads up display of the game
+        self.hud = hud
+        
+        # Initial height of the wall and initial width of gaps between walls
         self.initWallHeight = initWallHeight
         self.initGapWidth = initGapWidth
-        self.wallImage = pygame.image.load('wall.png')
 
+        # Load wall image        
+        self.wallImage = pygame.image.load('wall.png')
+        
+        # Initialize empty arrays for enemies and creates array of wall rows
+        self.enemies = []
+        self.wallRows = []
+        self.createWalls(5,.1,.9)
+        
+        # The probability that a new enemy appears in a given frame
+        self.newEnemyProb = .01
+        
+        # Load the images of the enemy into the game
+        self.enemyImages = {}
         enemyFiles = [ f for f in listdir('SoldierSprite/') if isfile(join('SoldierSprite/',f)) ]
         for f in enemyFiles:
             image = pygame.image.load('SoldierSprite/'+f)
             resized = pygame.transform.scale(image,(25,int(25.0/image.get_size()[0]*image.get_size()[1])))
             self.enemyImages[f[0:-4]]=resized
             
-        self.createWalls(5,.1,.9)
-        
+    '''
+    checkHit
+    
+    Checks to see if enemy has been hit
+        parameters:
+            pos - position of bullet
+        returns:
+            True if enemy has been hit and False otherwise
+    '''
     def checkHit(self,pos):
+        
+        # Sort the array of enemies by how close they are to the front
         self.enemies = sorted(self.enemies, key=lambda enemy: enemy.pos[1])
+        
+        # If the bullet was aimed toward a wall, make sure only enemies 
+        # in front of the closest wall hit are considered
         minY = 0;
         for wallRow in self.wallRows:
             if wallRow.isHit(pos):
                 minY = wallRow.yPos
-        print minY
+        
+        # Only check if enemies are hit only if they are in front of the 
+        # closest wall hit
         for enemy in self.enemies[::-1]:
             if enemy.isHit(pos) and enemy.pos[1]>minY:
                 self.enemies.remove(enemy)
                 self.hud.scoreUp()
                 break
-
+            
+    '''
+    createWalls
+    
+    Create the walls in the game
+        parameters:
+            rows - the number of rows of walls
+            minRelY - relative Y position of where the first row of walls 
+                      should be
+            maxRelY - relative Y position of wher ethe last row of walls
+                      should be
+        returns:
+            none
+    '''
     def createWalls(self, rows, minRelY, maxRelY):
+        
+        # Assume the first wallRow will not be edged with 3 gaps
         edged = False
         gaps = 3
+        
+        # Temporary variable to help determine amount of walls needed
         gapTemp = 0
         
+        # For each row we want to create walls of
         for i in range(rows):
+            
+            # Scale the walls position so the distance between them is equal
             yTemp = (i*1.0/rows)**1.5
             yRange = maxRelY-minRelY
             yPos = (yTemp*yRange+minRelY)*self.screen.get_size()[1]
+            
+            # Find the pixel width of the gaps and the height of the walls
             gapWidth = self.scaler.scale(yPos,self.initGapWidth)*self.initGapWidth
             height = self.scaler.scale(yPos,self.initWallHeight)*self.initWallHeight
+            
+            # Add a new walLRow with the calculated arguments
             self.wallRows.append(WallRow(self.screen,yPos,height,self.scaler,edged,gapWidth,gaps-gapTemp,False,self.wallImage))
+            
+            # The next row will have the following properties
             edged = not edged
             gapTemp = 1-gapTemp
             
+        # Indicate the last wall of rows to be the last
         self.wallRows[-1].last=True
+                
+    '''
+    getPath
+    
+    Find a path for the enemies to move from one wall level to the next
+        parameters:
+            wallRowOld - The current wall row the enemy is on
+            wallRowOldPos - the cover index on the current wall row the enemy
+                            is on
+            wallRowNew - the next wall row the enemy is to move on to
+            wallRowNewPos - the cover index for enemy to move to on the next
+                            row of walls
+        returns: none
+    '''
+    def getPath(self, wallRowOld, wallRowOldPos, wallRowNew, wallRowNewPos):
+        
+        # Initialize an empty array of directions
+        directions = []
 
+        # The enemy will first move left or right to an exit of their wall
+        # row depending on if the wall row is edged and which cover in the 
+        # wall row the enemy is on
+        if wallRowOld.edged:
+            if wallRowOldPos%2==0:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+        else:
+            if wallRowOldPos%2==0:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+                
+        # If the last wall row has been reached
+        if wallRowOld.last:
+            
+            # Send the enemy forward off the screen
+            directions.append(['forward',self.screen.get_size()[1]+100])
+            
+        # Otherwise
+        else:
+            
+            # Send the enemy forward to the y position of the next wall row
+            directions.append(['forward',wallRowNew.yCover])
+            
+            # Send the enemy left or right depending on where their new
+            # cover is relative to them
+            lastDir = 'left'
+            if wallRowOld.xExits[wallRowOldPos] < wallRowNew.xCovers[wallRowNewPos]:
+                lastDir = 'right'
+            directions.append([lastDir,wallRowNew.xCovers[wallRowNewPos]])
+        
+        # Return the updated list of directions for the enemy
+        return directions
+        
+    '''
+    sendShoot
+    
+    Give the enemy directions to shoot at the player
+        parameters:
+            wallRowOld - the current wall row the enemy is at
+            walRowOldPos - the cover index of the enemy
+            time - the amount of the seconds the enemy should shoot for
+    '''
+    def sendShoot(self, wallRowOld, wallRowOldPos, time):
+        
+        # Initialize the directions to send to the enemy
+        directions = []
+        
+        # The enemy will first move left or right to an exit of their wall
+        # row depending on if the wall row is edged and which cover in the 
+        # wall row the enemy is on
+        if wallRowOld.edged:
+            if wallRowOldPos%2==0:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+        else:
+            if wallRowOldPos%2==0:
+                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
+            else:
+                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
+                
+        # Instruct the enemy to shoot
+        directions.append(['shoot',time])
+        
+        # Send the enemy back to his cover
+        if directions[0][0] == 'left':
+            directions.append(['right',wallRowOld.xCovers[wallRowOldPos]])
+        else:
+            directions.append(['left',wallRowOld.xCovers[wallRowOldPos]])
+            
+        # Give the enemy his instructions    
+        return directions
+        
+    '''
+    makeWait
+    
+    Make the enemy wait behind his cover
+        parameters:
+            time - the amount of time the enemy should wait for
+        returns: none
+    '''
+    def makeWait(self, time):
+        
+        # Give the enemy the instructions to wait
+        return [['wait',time]]
+        
+    '''
+    update
+    
+    Update all the walls and enemies properties and images
+        parameters: none
+        returns: none
+    '''
     def update(self):
         
+        # Randomly decide if a new enemy should be placed on the screen
         if random.random()<=self.newEnemyProb:
+            
+            # Choose a random cover index
             index = random.randint(0,len(self.wallRows[0].xCovers)-1)
             pos = self.wallRows[0].xCovers[index]
+            
+            # Create a new enemy and send him the instruction to move forward
+            # to his first cover
             newEnemy = Enemy(self.screen,(pos,1),index,0,self.enemyImages,self.scaler)
             newEnemy.updateQueue([['forward',self.wallRows[0].yCover]])
             self.enemies.insert(0,newEnemy)
+            
+            # Increase the probability that a new enemy will appear
             self.newEnemyProb+=.001
         
-                    
+        # For each enemy that is alive
         for enemy in self.enemies:
+            
+            # If they are available to do a task
             if enemy.status =='available':
+                
+                # Randomly decide if they should shoot at the player, wait
+                # behind their cover, or advance to the next wall row
                 shootProb = .2
                 waitProb = .3
                 advanceProb = .5
                 choice = random.random()
+                
+                # Shoot the player
                 if choice < shootProb:
                     enemy.updateQueue(self.sendShoot(self.wallRows[enemy.level], enemy.relPos, 3.0))
+                    
+                # Wait behind cover
                 elif choice < shootProb + waitProb:
                     enemy.updateQueue(self.makeWait(3.0))
+                    
+                # Advance to the next row
                 elif choice < shootProb + waitProb + advanceProb:
+                    
+                    # ...if they are not in the last wall row
                     if not self.wallRows[enemy.level].last:
                         index = random.randint(0,len(self.wallRows[enemy.level+1].xCovers)-1)
                         pos = self.wallRows[enemy.level+1].xCovers[index]
                         enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,self.wallRows[enemy.level+1],index))
-                        enemy.updatePosition(index,enemy.level+1)                
+                        enemy.updatePosition(index,enemy.level+1)         
+                    
+                    # But if they are, then send them off the screen
                     else:
                         enemy.updateQueue(self.getPath(self.wallRows[enemy.level],enemy.relPos,None,None))
                     
+        # For each enemy
         for enemy in self.enemies:
+            
+            # Check if the enemy has successfully shot the user and update
+            # the HUD accordingly
             if enemy.hurtUser:
                 enemy.hurtUser = False
                 self.hud.shot()
+                
+            # Check if the enemy has successfully reached the bottom of the
+            # screen and remove them if they have (and hurt the user)
             if enemy.pos[1]>self.screen.get_size()[0]:
                 self.enemies.remove(enemy)
                 self.hud.hurt()
                 
+        # Sort the array of enemies by their y position
         self.enemies = sorted(self.enemies, key=lambda enemy: enemy.pos[1])
                 
+        # Display all of the wall rows and enemies, starting from the back
+        # of the road to the beginning. To do this, first find the total
+        # number of wall roads and enemies and start the counters at 0
         entities = len(self.wallRows)+len(self.enemies)
         wrCounter = 0
         enemyCounter = 0
+        
+        # While not all enemies and wall rows have been shown
         while enemyCounter + wrCounter < entities:
+            
+            # If all the enemies have already been shown, show the rest of
+            # the walls
             if enemyCounter == len(self.enemies):
                 for i in range(wrCounter,len(self.wallRows)):
                     self.wallRows[i].update()
-                    wrCounter=len(self.wallRows)
+                wrCounter=len(self.wallRows)
+                    
+            # If all the wall rows have already been shown, show the rest of
+            # the enemies
             elif wrCounter == len(self.wallRows):
                 for i in range(enemyCounter,len(self.enemies)):
                     self.enemies[i].update()
-                    enemyCounter=len(self.enemies)
+                enemyCounter=len(self.enemies)
+                    
+            # But otherwise...
             else:
+                
+                # Find the y position of the next wall row and next enemy
+                # to be displayed
                 wallY = self.wallRows[wrCounter].yPos
                 enemyY = self.enemies[enemyCounter].pos[1]
+                
+                # Display whichever is closer to the back of the road first:
+                # the road or the wall
                 if enemyY>wallY:
                     self.wallRows[wrCounter].update()
                     wrCounter+=1
                 else:
                     self.enemies[enemyCounter].update()
                     enemyCounter+=1
-                
-    def getPath(self, wallRowOld, wallRowOldPos, wallRowNew, wallRowNewPos):
-        
-        directions = []
-
-        if wallRowOld.edged:
-            if wallRowOldPos%2==0:
-                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
-            else:
-                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
-        else:
-            if wallRowOldPos%2==0:
-                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
-            else:
-                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
-                
-        if wallRowOld.last:
-            directions.append(['forward',self.screen.get_size()[1]+100])
-        else:
-            directions.append(['forward',wallRowNew.yCover])
-            lastDir = 'left'
-            if wallRowOld.xExits[wallRowOldPos] < wallRowNew.xCovers[wallRowNewPos]:
-                lastDir = 'right'
-                
-            directions.append([lastDir,wallRowNew.xCovers[wallRowNewPos]])
-        #print 'Directions',directions
-        return directions
-        
-    def sendShoot(self, wallRowOld, wallRowOldPos, time):
-        
-        directions = []
-        
-        if wallRowOld.edged:
-            if wallRowOldPos%2==0:
-                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
-            else:
-                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
-        else:
-            if wallRowOldPos%2==0:
-                directions.append(['left',wallRowOld.xExits[wallRowOldPos]])
-            else:
-                directions.append(['right',wallRowOld.xExits[wallRowOldPos]])
-                
-        
-        directions.append(['shoot',time])
-        
-        if directions[0][0] == 'left':
-            directions.append(['right',wallRowOld.xCovers[wallRowOldPos]])
-        else:
-            directions.append(['left',wallRowOld.xCovers[wallRowOldPos]])
-            
-        return directions
-        
-    def makeWait(self, time):
-        return [['wait',time]]
                     
-class Enemy:
-    
-    '''
-    __init__
-    
-    Initialize the Scalar class
-        parameters:
-            screen -
-            pos -
-            relPos -
-            level -
-            images -
-            scalar -
-
-        returns: none
-    '''    
-    def __init__(self, screen, pos, relPos, level, images, scaler):
-        
-        self.screen=screen
-        self.pos=pos
-        self.relPos = relPos
-        self.level = level
-        self.images = images
-        self.scaler = scaler
-        self.initWidth = 25.0
-        self.initSpeed = 2.0
-        self.status = 'available'
-        self.direction = 'none'
-        self.oldDirection = self.direction
-        self.target = -1
-        self.walkCounter = 0
-        self.wait = 10 
-        self.height = 0
-        self.width = 0
-        self.queue = []
-        self.currentPic = 'front2'
-        self.timer = -1
-        self.wait = .1
-        self.shootingTimer = -1
-        self.hurtUser = False;
-        self.hurtUserProb = .01
-        
-    def updatePosition(self,relPos,level):
-        self.relPos = relPos
-        self.level = level
-        
-    def updateQueue(self,directions):
-        
-        self.queue.extend(directions)
-        
-    def update(self):
-        
-        self.move()
-        image = self.getImage()
-        
-        scaleFactor = self.scaler.scale(self.pos[1],self.initWidth)
-        self.height = int(scaleFactor*image.get_size()[1])
-        self.width = int(scaleFactor*image.get_size()[0])
-        toDisplay = pygame.transform.scale(image,(self.width,self.height))
-        self.screen.blit(toDisplay,(self.scaler.findX(self.pos[1],self.pos[0])-toDisplay.get_size()[0]/2,self.pos[1]-toDisplay.get_size()[1]))
-        
-    def getImage(self):
-        
-        if self.oldDirection!=self.direction:
-            self.timer = time.time()
-            if self.direction == 'forward':
-                self.currentPic = 'front1'
-            elif self.direction == 'left':
-                self.currentPic = 'left1'
-            elif self.direction == 'right':
-                self.currentPic = 'right1'
-            elif self.direction == 'shoot':
-                self.currentPic = 'shoot1'
-            else:
-                self.currentPic = 'front2'
-        elif time.time() - self.timer > self.wait:
-            if self.currentPic == 'front1':
-                self.currentPic = 'front3'
-            elif self.currentPic == 'left1':
-                self.currentPic = 'left3'
-            elif self.currentPic =='right1':
-                self.currentPic = 'right3'
-            elif self.currentPic == 'front3':
-                self.currentPic = 'front1'
-            elif self.currentPic == 'left3':
-                self.currentPic = 'left1'
-            elif self.currentPic =='right3':
-                self.currentPic = 'right1'
-            elif self.currentPic =='shoot1':
-                if random.random() < self.hurtUserProb:
-                    self.hurtUser = True
-                self.currentPic = 'shoot2'
-            elif self.currentPic =='shoot2':
-                self.currentPic = 'shoot1'
-            self.timer = time.time()
-            
-        self.oldDirection = self.direction
-            
-        return self.images[self.currentPic]
-    
-    def move(self):
-        
-        if self.status != 'available':
-            speed = .2*(self.initSpeed*self.scaler.scale(self.pos[1],self.initSpeed))**2
-            if self.direction=='forward':
-                self.pos = (self.pos[0],self.pos[1]+speed)
-                if self.pos[1] > self.target:
-                    self.pos = (self.pos[0],self.target)
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='left':
-                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
-                self.pos = (self.pos[0]-speed/roadWidth,self.pos[1])
-                if self.pos[0] < self.target:
-                    self.pos = (self.target,self.pos[1])
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='right':
-                roadWidth = self.scaler.scale(self.pos[1],self.scaler.xRange1[1]-self.scaler.xRange1[0])*(self.scaler.xRange1[1]-self.scaler.xRange1[0])
-                self.pos = (self.pos[0]+speed/roadWidth,self.pos[1])
-                if self.pos[0] > self.target:
-                    self.pos = (self.target,self.pos[1])
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='shoot':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-            elif self.direction=='wait':
-                if time.time() - self.shootingTimer > self.target:
-                    self.status='available'
-                    self.direction='none'
-                    self.target=-1
-                
-        if self.status=='available' and len(self.queue)>0:
-            self.status='moving'
-            self.direction=self.queue[0][0]
-            if self.direction == 'shoot' or self.direction == 'wait':
-                self.shootingTimer = time.time()
-            self.target=self.queue[0][1]
-            self.queue.remove(self.queue[0])
-        
-    def isHit(self,pos):
-        minPoint = (self.scaler.findX(self.pos[1],self.pos[0])-self.width/2.0,self.pos[1]-self.height)
-        if(pos[0]>minPoint[0] and pos[0]<minPoint[0]+self.width):
-            if(pos[1]>minPoint[1] and pos[1]<minPoint[1]+self.height):
-                return True
-        return False
-        
 '''
 Main
 
 Main function for the game. 
 '''
 class Main:
+    
     '''
     __init__
     
@@ -1254,6 +1480,7 @@ class Main:
         returns: none
     '''
     def __init__(self):
+        
         # Initialize PyGame stuff
         pygame.init()
         infoObject = pygame.display.Info()
@@ -1289,9 +1516,11 @@ class Main:
         
         # Initializes the choices of the guns for upgrade
         self.gunChoice = [Gun(self.screen,self.cam, 10),Shotgun(self.screen,self.cam, 10)]
+        self.gunChoice2 = [Gun(self.screen,self.cam, 10),Bomb(self.screen,self.cam, 10)]
 
         # Initializes the screen        
         self.gun = self.gunChoice[0]
+        self.gun = self.gunChoice2[0]
 
         # self.menu = Menu(self.screen,'Enter the Game')
         
@@ -1320,6 +1549,7 @@ class Main:
         
         # Calibrate the screen
         if self.doCalibrate:
+            
             # Calibrate for around 3 seconds            
             i = 0
             while i<100:
@@ -1328,20 +1558,25 @@ class Main:
             self.cam.endCalibration()
             self.doCalibrate = False
 
-        
+        # For each user event the pygame has in its queue
         for event in pygame.event.get():
 
+            # Quit if the user wants to quit
             if event.type==QUIT:
                 self.cam.endCam()
                 exit()
             
+            # If a key has been pressed...
             if event.type == KEYDOWN:
+                
+                # If the escape key is pressed, quit the game
                 if event.key == K_ESCAPE:
                     self.cam.endCam()
                     exit()
                 
                 # Keyboard key to shoot
-                if event.key == K_SPACE:  
+                if event.key == K_SPACE: 
+                    
                     # position of the gun
                     pos = (self.cam.x,self.cam.y)
                     
@@ -1351,9 +1586,11 @@ class Main:
                     else:
                         self.gun.ammo -= 1
                         self.shooting = True
+                        
                         # Check to see if the enemy is hit and remove
                         self.enMan.checkHit(pos)
                         i = 0                        
+                        
                         # Upgrades for the gun to make it shoot multiple times
                         while i < self.gun.numShot:
                             newpos = (pos[0]+self.gun.hitRadius/(random.random() +1), pos[1] + self.gun.hitRadius/(random.random()+1))
@@ -1363,16 +1600,7 @@ class Main:
                         # plays a shooting sound
                         self.track = pygame.mixer.music.load('shot.wav') 
                         pygame.mixer.music.play()
-
-                # reloads gun and plays relevant sound
-                if event.key == K_r:
-                    self.gun.reloaded()
-                    try:
-                        self.track = pygame.mixer.music.load('reloadFinal.wav')        
-                        pygame.mixer.music.play()
-                    except ValueError:
-                        pass
-
+                
                 # Pause key
                 if event.key == K_p:
                     self.pauses = not self.pauses
@@ -1382,10 +1610,13 @@ class Main:
         self.cam.update()
         self.gun.update()
     
-        # upgrade the gun as the score goes up        
-        if self.hud.score > 10:       
+        # upgrade the gun as the score goes up to shotgun and bomb       
+        if self.hud.score > 3:
             self.gun = self.gunChoice[1]
-        
+            
+        if 4 <self.hud.score <6:
+            self.gun = self.gunChoice2[1]
+
         # Pausing the game
         if self.pauses == False:
             if self.hud.health>0:
@@ -1409,10 +1640,10 @@ class Main:
                     if self.gun.isEmpty():
                         pass
                     elif not self.shot:
+                        
                         # shot boolean to a shoot only once
                         self.shot = True
                         self.gun.ammo -= 1
-#                        self.shooting = True
                         self.enMan.checkHit(pos)
                         
                         # shoot multiple times for gun upgrades depending on the gun's paramters
@@ -1434,6 +1665,7 @@ class Main:
 
                 self.hud.update()
                 self.gun.update()
+                
             # end game when the health = 0
             else:
                 self.hud.endGame()
@@ -1453,10 +1685,13 @@ class Main:
         
         # display
         pygame.display.flip()
-
+             
+'''
+Main function
+'''
 if __name__ == '__main__':
     
-    # call main function to call the game
+    # Start the game and run it indefinitely
     game = Main()
     while True:
         game.update()
