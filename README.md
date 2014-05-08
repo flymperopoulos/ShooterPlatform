@@ -5,9 +5,7 @@ This is a repository on a first-person shooting game for the class "Software Des
 
 Team Members:
 
-Filippos Lymperopoulos
-Sidd Singal
-James Jang
+Filippos Lymperopoulos, Sidd Singal, James Jang
 
 ====================================================================================
 
