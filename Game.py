@@ -2,7 +2,8 @@
 """
 Created on Wed Apr 16 21:29:13 2014
 
-@author: 
+@authors: 
+
 Sidd Singal
 James Jang
 Filippos Lymperopoulos
@@ -10,7 +11,7 @@ Filippos Lymperopoulos
 Shooter Platform
 
 You are under attack by the military, and you must shoot them to defend
-youself. The enemies manuever around walls and try to shoot back at you. 
+youself. The enemies maneuver around walls and try to shoot back at you. 
 Survive as long as you can. This game uses a physical replica gun to shoot
 with in the game using openCV libraries.
 
@@ -294,7 +295,8 @@ class HUD:
         
         # Display the text on the screen
         pygame.draw.rect(self.screen, (255,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.68,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))
-        self.screen.blit(text,(self.screen.get_size()[0]/2.2,self.screen.get_size()[1]/2.3))
+        pygame.draw.rect(self.screen, (100,240,130), Rect((self.screen.get_size()[0]-self.screen.get_size()[0]/1.2,self.screen.get_size()[1]/2.5), (self.screen.get_size()[0]/5,self.screen.get_size()[1]/10)))        
+        self.screen.blit(text,(self.screen.get_size()[0]/2.3,self.screen.get_size()[1]/2.34))
        
 '''
 Background
